@@ -1,0 +1,6 @@
+.DS_Store
+config/
+venv/
+db/valuebot.sqlite3
+*.pyc
+*.swp
