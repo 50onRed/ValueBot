@@ -13,6 +13,7 @@ def payload(text):
 
 value_bot = ValueBot(
     help_commands=app.config["HELP_COMMANDS"],
+    list_commands=app.config["LIST_COMMANDS"],
     hashtags=app.config['HASHTAGS'])
 
 @app.route('/', methods=['POST'])

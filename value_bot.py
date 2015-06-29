@@ -1,10 +1,17 @@
 import re
+import datetime
 from db.db import Post
+from prettytable import PrettyTable
+
+MONTHS=["january", "february", "march", "april", "may", "june",
+        "july", "august", "september", "october", "november", "december"]
 
 class ValueBot():
-    def __init__(self, help_commands, hashtags):
+    def __init__(self, help_commands, list_commands, hashtags):
         self.help_commands = help_commands
-        self.values = self.__generateValuesDict(hashtags)
+        self.list_commands = list_commands
+        self.valuesDict = self.__generateValuesDict(hashtags)
+        self.values = hashtags.keys()
 
     def handleIncomingMessage(self, msg):
         trigger = msg["trigger_word"]
@@ -18,25 +25,29 @@ class ValueBot():
             if text.lower() in self.help_commands:
                 return "TODO: WRITE HELP MESSAGE"
 
+            if text.startswith(tuple(self.list_commands)):
+                # TODO: send this as a private message
+                return self.__generateList(text, poster)
+
         return self.__handleCallOut(trigger, text, poster)
 
     def __handleCallOut(self, trigger, text, poster):
         value, user = None, None
 
-        if trigger in self.values: # message started with hashtag
-            value = self.values[trigger]
+        if trigger in self.valuesDict: # message started with hashtag
+            value = self.valuesDict[trigger]
         else: # bot triggered by name
-            hashtags = {tag.rstrip(".,!?:;") for tag in text.split() if tag.startswith("#")}
+            hashtags = [tag.rstrip(".,!?:;") for tag in text.split() if tag.startswith("#")]
             for tag in hashtags:
-                if tag in self.values:
-                    value = self.values[tag]
-                    break
+                if tag in self.valuesDict:
+                    value = self.valuesDict[tag]
+                    break # only use the first hashtag that matches a value
 
         if value:
             mentioned_users = [name.strip("@.,!?:;") for name in text.split() if name.startswith("@")]
             if len(mentioned_users) >= 1:
                 user = mentioned_users[0]
-        
+
         if value and user:
             post = Post(user, poster, value, text)
             if post.save():
@@ -46,12 +57,77 @@ class ValueBot():
 
         return ''
 
+    def __generateList(self, text, poster):
+        tokens = [token.rstrip(".,!?:;").lower() for token in text.split()]
+        del(tokens[0]) # get rid of 'list' token
+        length = len(tokens)
+
+        if length < 1:
+            return ''
+
+        leaders, user, value, date, year = False, None, None, None, None
+
+        if tokens[0] == "leaders":
+            leaders = True
+            del(tokens[0])
+            length -= 1
+            if length < 1:
+                return ''
+
+        # TODO: check if user is admin
+
+        subject = tokens[0]
+
+        if subject == "me" and not leaders:
+            user = poster
+        elif subject.startswith("@") and not leaders:
+            user = subject.lstrip("@")
+        elif subject in self.values or subject == "all":
+            value = subject
+        elif subject in self.valuesDict:
+            value = self.valuesDict[subject]
+        elif not leaders:
+            user = subject
+
+        if length >= 2:
+            date_token = tokens[1]
+            if date_token in ["today", "all"]:
+                date = date_token
+            elif date_token in MONTHS:
+                date = MONTHS.index(date_token) + 1
+
+            if length >= 3:
+                year_token = tokens[2]
+
+                try:
+                    year = int(year_token)
+                except ValueError:
+                    return "Invalid year '{}'".format(year_token)
+            elif isinstance(date, int):
+                now = datetime.datetime.now()
+                year = now.year
+
+                if now.month < date:
+                    year -= 1
+        else:
+            date = "all"
+
+        if user:
+            Post.getPostsByUser(user, date, year)
+        elif value:
+            if leaders:
+                Post.getLeadersByValue(value, date, year)
+            else:
+                Post.getPostsByValue(value, date, year)
+        else:
+            return ''
+
     # Flattens hashtag dictionary, for easy mapping from hashtags to corresponding values
     def __generateValuesDict(self, hashtags):
-        values = {}
+        valuesDict = {}
 
         for value in hashtags:
             for hashtag in hashtags[value]:
-                values[hashtag] = value
+                valuesDict[hashtag] = value
 
-        return values
+        return valuesDict
