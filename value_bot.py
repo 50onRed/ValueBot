@@ -78,7 +78,7 @@ class ValueBot():
         if length < 1:
             return ''
 
-        leaders, user, value, date, year = False, None, None, None, None
+        leaders, user, value, date, month, year = False, None, None, None, None, None
 
         if tokens[0] == "leaders":
             leaders = True
@@ -103,37 +103,52 @@ class ValueBot():
             user = subject
 
         if length >= 2:
+            now = datetime.datetime.now()
+
             date_token = tokens[1]
-            if date_token in ["today", "all"]:
-                date = date_token
-            elif date_token in MONTHS:
-                date = MONTHS.index(date_token) + 1
-
-            if length >= 3:
-                year_token = tokens[2]
-
-                try:
-                    year = int(year_token)
-                except ValueError:
-                    return "Invalid year '{}'".format(year_token)
-            elif isinstance(date, int):
-                now = datetime.datetime.now()
+            if date_token == "today":
+                date = now.day
+                month = now.month
                 year = now.year
+            elif date_token == "all":
+                date = None
+            elif date_token in MONTHS:
+                month = MONTHS.index(date_token) + 1
 
-                if now.month < date:
-                    year -= 1
+                if length >= 3:
+                    year_token = tokens[2]
+
+                    try:
+                        year = int(year_token)
+                    except ValueError:
+                        return "Invalid year '{}'".format(year_token)
+                else:
+                    year = now.year
+
+                    if now.month < date:
+                        year -= 1
+
+        print (leaders, user, value, date, month, year)
+
+        if leaders and value:
+            Post.getLeadersByValue(value, date, month, year)
         else:
-            date = "all"
+            posts = None
+            if user:
+                posts = Post.getPostsByUser(user, date, month, year)
+            elif value:
+                posts = Post.getPostsByValue(value, date, month, year)
 
-        if user:
-            Post.getPostsByUser(user, date, year)
-        elif value:
-            if leaders:
-                Post.getLeadersByValue(value, date, year)
+            if posts:
+                table = newLeftAlignedTable(["User", "Poster", "Value", "Message", "Posted"])
+
+                for post in posts:
+                    table.add_row([post.user, post.poster, post.value, post.text, post.posted_at])
+                return self.sendPrivateMessage(poster, "```{}```".format(table.get_string()))
             else:
-                Post.getPostsByValue(value, date, year)
-        else:
-            return ''
+                return self.sendPrivateMessage(poster, 'No posts found!')
+
+        return ''
 
     # Flattens hashtag dictionary, for easy mapping from hashtags to corresponding values
     def __generateValuesDict(self, hashtags):
@@ -144,3 +159,9 @@ class ValueBot():
                 valuesDict[hashtag] = value
 
         return valuesDict
+
+def newLeftAlignedTable(attrs):
+    t = PrettyTable(attrs)
+    for a in attrs:
+        t.align[a] = "l"
+    return t

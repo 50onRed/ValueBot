@@ -5,5 +5,5 @@ create table posts (
   poster text not null,
   value text not null,
   text text not null,
-  posted_at text not null
+  posted_at timestamp not null
 );
