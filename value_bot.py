@@ -1,5 +1,7 @@
 import re
 import datetime
+import requests
+import json
 from db.db import Post
 from prettytable import PrettyTable
 
@@ -7,11 +9,12 @@ MONTHS=["january", "february", "march", "april", "may", "june",
         "july", "august", "september", "october", "november", "december"]
 
 class ValueBot():
-    def __init__(self, help_commands, list_commands, hashtags):
+    def __init__(self, help_commands, list_commands, hashtags, webhook_url):
         self.help_commands = help_commands
         self.list_commands = list_commands
         self.valuesDict = self.__generateValuesDict(hashtags)
         self.values = hashtags.keys()
+        self.webhook_url = webhook_url
 
     def handleIncomingMessage(self, msg):
         trigger = msg["trigger_word"]
@@ -30,6 +33,16 @@ class ValueBot():
                 return self.__generateList(text, poster)
 
         return self.__handleCallOut(trigger, text, poster)
+
+    def sendPrivateMessage(self, recipient, text):
+        payload = {
+            "channel": "@{}".format(recipient),
+            "text": text
+        }
+        data = { "payload": json.dumps(payload) }
+        r = requests.post(self.webhook_url, data=data)
+
+        return "PM-ed!"
 
     def __handleCallOut(self, trigger, text, poster):
         value, user = None, None

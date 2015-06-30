@@ -1,6 +1,7 @@
 import json
 from value_bot import ValueBot
 from flask import Flask, request
+from db.db import init_db
 
 app = Flask(__name__)
 app.config.from_pyfile('./config/options.py')
@@ -14,7 +15,8 @@ def payload(text):
 value_bot = ValueBot(
     help_commands=app.config["HELP_COMMANDS"],
     list_commands=app.config["LIST_COMMANDS"],
-    hashtags=app.config['HASHTAGS'])
+    hashtags=app.config["HASHTAGS"],
+    webhook_url=app.config["WEBHOOK_URL"])
 
 @app.route('/', methods=['POST'])
 def post():
