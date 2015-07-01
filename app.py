@@ -4,7 +4,7 @@ from flask import Flask, request
 from db.db import init_db
 
 app = Flask(__name__)
-app.config.from_pyfile('./config/options.py')
+app.config.from_pyfile('./config.py')
 
 def trigger_list():
     hashtags = app.config["HASHTAGS"]
@@ -23,8 +23,6 @@ def payload(text):
     }
 
 value_bot = ValueBot(
-    help_commands=app.config["HELP_COMMANDS"],
-    list_commands=app.config["LIST_COMMANDS"],
     admins=app.config["ADMINS"],
     hashtags=app.config["HASHTAGS"],
     webhook_url=app.config["WEBHOOK_URL"])

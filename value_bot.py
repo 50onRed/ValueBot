@@ -9,9 +9,7 @@ MONTHS=["january", "february", "march", "april", "may", "june",
         "july", "august", "september", "october", "november", "december"]
 
 class ValueBot():
-    def __init__(self, help_commands, list_commands, admins, hashtags, webhook_url):
-        self.help_commands = help_commands
-        self.list_commands = list_commands
+    def __init__(self, admins, hashtags, webhook_url):
         self.admins = admins
         self.valuesDict = self.__generateValuesDict(hashtags)
         self.values = hashtags.keys()
@@ -26,10 +24,10 @@ class ValueBot():
             regex = re.compile(trigger + ':*\s*(.*)')
             text = regex.match(text).group(1) # only the text after the trigger command
 
-            if text.lower() in self.help_commands:
+            if text.lower() in ["help", "man"]:
                 return "TODO: WRITE HELP MESSAGE"
 
-            if text.startswith(tuple(self.list_commands)):
+            if text.startswith("list"):
                 return self.__generateList(text, poster)
 
         return self.__handleCallOut(trigger, text, poster)
