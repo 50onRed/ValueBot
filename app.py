@@ -25,7 +25,7 @@ def payload(text):
 value_bot = ValueBot(
     help_commands=app.config["HELP_COMMANDS"],
     list_commands=app.config["LIST_COMMANDS"],
-    admins=app.config["ADMINS"]
+    admins=app.config["ADMINS"],
     hashtags=app.config["HASHTAGS"],
     webhook_url=app.config["WEBHOOK_URL"])
 
