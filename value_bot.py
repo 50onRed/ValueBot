@@ -159,7 +159,7 @@ class ValueBot():
             title = "Posts "
             if user:
                 posts = Post.getPostsByUser(user, date, month, year)
-                title += "by @{}".format(user)
+                title += "about @{}".format(user)
             elif value:
                 posts = Post.getPostsByValue(value, date, month, year)
                 title += "in {}".format(value)
