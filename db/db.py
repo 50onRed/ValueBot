@@ -2,7 +2,6 @@ import sqlite3
 import datetime
 from calendar import monthrange
 from contextlib import closing
-from flask import current_app as app
 
 def connect_db():
     return sqlite3.connect('./db/valuebot.sqlite3')
@@ -12,6 +11,7 @@ def init_db():
         with file('./db/schema.sql') as f:
             db.cursor().executescript(f.read())
         db.commit()
+        print "DB schema initialized."
 
 class Post():
     def __init__(self, user, poster, value, text):

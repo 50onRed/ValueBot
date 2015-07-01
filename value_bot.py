@@ -20,6 +20,7 @@ class ValueBot():
         trigger = msg["trigger_word"]
         text = msg["text"]
         poster = msg["user_name"]
+        print msg["token"]
 
         if not trigger.startswith("#"):
             regex = re.compile(trigger + ':*\s*(.*)')
@@ -45,6 +46,8 @@ class ValueBot():
         }
         data = { "payload": json.dumps(payload) }
         r = requests.post(self.webhook_url, data=data)
+
+        print r.text
 
         return "PM-ed!"
 
