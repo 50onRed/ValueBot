@@ -9,9 +9,10 @@ MONTHS=["january", "february", "march", "april", "may", "june",
         "july", "august", "september", "october", "november", "december"]
 
 class ValueBot():
-    def __init__(self, help_commands, list_commands, hashtags, webhook_url):
+    def __init__(self, help_commands, list_commands, admins, hashtags, webhook_url):
         self.help_commands = help_commands
         self.list_commands = list_commands
+        self.admins = admins
         self.valuesDict = self.__generateValuesDict(hashtags)
         self.values = hashtags.keys()
         self.webhook_url = webhook_url
@@ -20,7 +21,6 @@ class ValueBot():
         trigger = msg["trigger_word"]
         text = msg["text"]
         poster = msg["user_name"]
-        print msg["token"]
 
         if not trigger.startswith("#"):
             regex = re.compile(trigger + ':*\s*(.*)')
@@ -46,8 +46,6 @@ class ValueBot():
         }
         data = { "payload": json.dumps(payload) }
         r = requests.post(self.webhook_url, data=data)
-
-        print r.text
 
         return "PM-ed!"
 
@@ -100,10 +98,11 @@ class ValueBot():
                 year = now.year
                 subject = "all"
 
-        # TODO: check if user is admin
-
         if not subject:
             subject = tokens[0]
+
+        if not poster in self.admins and subject != "me":
+            return "Admin-only!"
 
         if subject == "me" and not leaders:
             user = poster
@@ -139,8 +138,6 @@ class ValueBot():
 
                     if now.month < date:
                         year -= 1
-
-        print (leaders, user, value, date, month, year)
 
         if leaders and value:
             leaders = Post.getLeadersByValue(value, date, month, year)
