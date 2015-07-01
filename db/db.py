@@ -28,13 +28,13 @@ class Post():
 
         with con:
             con.execute(
-                "INSERT INTO POSTS(user, poster, value, text, posted_at) VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO posts(user, poster, value, text, posted_at) VALUES (?, ?, ?, ?, ?)",
                 (self.user, self.poster, self.value, self.text, self.posted_at))
             return True
 
     @classmethod
     def getPostsByUser(cls, user, date, month, year):
-        query = "SELECT * FROM POSTS WHERE user = ?"
+        query = "SELECT * FROM posts WHERE user = ?"
         attrs = (user,)
 
         if date or month:
@@ -53,7 +53,7 @@ class Post():
 
     @classmethod
     def getPostsByValue(cls, value, date, month, year):
-        query = "SELECT * FROM POSTS"
+        query = "SELECT * FROM posts"
         attrs = ()
         where_added = False
 
@@ -83,7 +83,36 @@ class Post():
 
     @classmethod
     def getLeadersByValue(cls, value, date, month, year):
-        print "getting leaders"
+        query = "SELECT user, COUNT(user) as user_occurence FROM posts"
+        attrs = ()
+        where_added = False
+
+        if value and value != "all":
+            where_added = True
+            query += " WHERE value = ?"
+            attrs += (value,)
+
+        if date or month:
+            if where_added:
+                query += " AND"
+            else:
+                query += " WHERE"
+
+            query += " posted_at BETWEEN ? AND ?"
+            attrs += cls.__getDateRange(date, month, year)
+
+        query += " GROUP BY user ORDER BY user_occurence DESC"
+
+        print query
+        con = connect_db()
+        with con:
+            res = con.execute(query, attrs)
+
+            to_return = []
+            for user in res:
+                to_return.append({ 'user': user[0], 'posts': user[1] })
+
+            return to_return
 
     @classmethod
     def __getDateRange(cls, date, month, year):
