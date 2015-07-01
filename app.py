@@ -8,7 +8,7 @@ app.config.from_pyfile('./config/options.py')
 
 def trigger_list():
     hashtags = app.config["HASHTAGS"]
-    triggers = set()
+    triggers = {"valuebot"}
 
     for value in hashtags:
         for hashtag in hashtags[value]:
