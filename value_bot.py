@@ -29,12 +29,16 @@ class ValueBot():
                 return "TODO: WRITE HELP MESSAGE"
 
             if text.startswith(tuple(self.list_commands)):
-                # TODO: send this as a private message
                 return self.__generateList(text, poster)
 
         return self.__handleCallOut(trigger, text, poster)
 
-    def sendPrivateMessage(self, recipient, text):
+    def sendPrivateMessage(self, recipient, title, table_text=None):
+        text = "*{}*".format(title)
+
+        if table_text:
+            text += "\n```{}```".format(table_text)
+
         payload = {
             "channel": "@{}".format(recipient),
             "text": text
@@ -74,22 +78,29 @@ class ValueBot():
         tokens = [token.rstrip(".,!?:;").lower() for token in text.split()]
         del(tokens[0]) # get rid of 'list' token
         length = len(tokens)
+        now = datetime.datetime.now()
 
         if length < 1:
             return ''
 
         leaders, user, value, date, month, year = False, None, None, None, None, None
 
+        subject = None
+
         if tokens[0] == "leaders":
             leaders = True
             del(tokens[0])
             length -= 1
             if length < 1:
-                return ''
+                # default to this month
+                month = now.month
+                year = now.year
+                subject = "all"
 
         # TODO: check if user is admin
 
-        subject = tokens[0]
+        if not subject:
+            subject = tokens[0]
 
         if subject == "me" and not leaders:
             user = poster
@@ -103,8 +114,6 @@ class ValueBot():
             user = subject
 
         if length >= 2:
-            now = datetime.datetime.now()
-
             date_token = tokens[1]
             if date_token == "today":
                 date = now.day
@@ -131,22 +140,40 @@ class ValueBot():
         print (leaders, user, value, date, month, year)
 
         if leaders and value:
-            Post.getLeadersByValue(value, date, month, year)
+            leaders = Post.getLeadersByValue(value, date, month, year)
+
+            title = "Leaders in {}{}".format(value, dateClause(date, month, year))
+
+            if leaders:
+                table = newLeftAlignedTable(["User", "# Posts"])
+
+                for user in leaders:
+                    table.add_row([user['user'], user['posts']])
+
+                return self.sendPrivateMessage(poster, title, table.get_string())
+            else:
+                return self.sendPrivateMessage(poster, title, 'No leaders found')
         else:
             posts = None
+
+            title = "Posts "
             if user:
                 posts = Post.getPostsByUser(user, date, month, year)
+                title += "by @{}".format(user)
             elif value:
                 posts = Post.getPostsByValue(value, date, month, year)
+                title += "in {}".format(value)
+
+            title += dateClause(date, month, year)
 
             if posts:
                 table = newLeftAlignedTable(["User", "Poster", "Value", "Message", "Posted"])
 
                 for post in posts:
                     table.add_row([post.user, post.poster, post.value, post.text, post.posted_at])
-                return self.sendPrivateMessage(poster, "```{}```".format(table.get_string()))
+                return self.sendPrivateMessage(poster, title, table.get_string())
             else:
-                return self.sendPrivateMessage(poster, 'No posts found!')
+                return self.sendPrivateMessage(poster, title, 'No posts found!')
 
         return ''
 
@@ -165,3 +192,16 @@ def newLeftAlignedTable(attrs):
     for a in attrs:
         t.align[a] = "l"
     return t
+
+def dateClause(date, month, year):
+    clause = ""
+
+    if (date or month):
+        if date:
+            clause += ", on {}".format(date)
+        else:
+            clause += ", in"
+
+        clause += " {} {}".format(MONTHS[month-1].capitalize(), year)
+
+    return clause
