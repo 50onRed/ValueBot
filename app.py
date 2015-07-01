@@ -6,6 +6,16 @@ from db.db import init_db
 app = Flask(__name__)
 app.config.from_pyfile('./config/options.py')
 
+def trigger_list():
+    hashtags = app.config["HASHTAGS"]
+    triggers = set()
+
+    for value in hashtags:
+        for hashtag in hashtags[value]:
+            triggers.add(hashtag)
+
+    return ','.join(triggers)
+
 def payload(text):
     return {
         "text": text,
