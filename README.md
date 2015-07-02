@@ -6,17 +6,17 @@ A Slack bot for calling out coworkers for espousing your organization's values. 
 
 A call-out is a message that includes a username and a hashtag representing a value to call the user out for. You provide the list of hashtags to listen to in the config file (described below). For example, if I wanted to call out `@mary` for an innovative solution to a problem that's been bugging the team for a while, that message would look like:
 
-> @mary helped us all out with that #innovative solution
+> @mary helped us all out with that \#innovative solution
 
 ### Posting
 
 To get ValueBot to hear you, you need to start your message with either `valuebot` or with the hashtag you're using. Using the example above:
 
-> valuebot @mary that was one #innovative solution!
+> valuebot @mary that was one \#innovative solution!
 
 or
 
-> #innovative @mary kudos for solving that problem!
+> \#innovative @mary kudos for solving that problem!
 
 ### Getting Lists
 
@@ -58,17 +58,27 @@ To get the users with the most posts, send a message with the following format:
 
 ## Setting it up
 
-You can set up ValueBot on your own server/Slack team in two steps: create a config file, and set up Slack's Incoming/Outgoing WebHooks.
+You can set up ValueBot on your own server/Slack team in three steps: create the databse, create a config file, and set up Slack's Incoming/Outgoing WebHooks.
+
+### Database
+
+ValueBot is powered by a SQLite database contained in the `db/` folder. To get the databse set up, simply run the following commands from the project directory:
+
+```
+$ sqlite3 db/valuebot.sqlite3
+$ python
+>>> from db.db import init_db
+>>> init_db()
+```
 
 ### Config file
 
 To start, create a file named config.py in the root of this directory. The three options you need are `WEBHOOK_URL`, `ADMINS`, and `HASHTAGS`.
 
-
 ```
 # config.py
 
-WEBHOOK_URL = "YOUR_URL_HERE" # The URL configured on Slack for Incoming WebHooks
+WEBHOOK_URL = "YOUR_URL_HERE" # The URL configured on Slack for Incoming Webhooks
 
 ADMINS = {"admin", "admin2"}  # A set of usernames corresponding to the users in
                               # your team to whom you want to give admin privileges.
@@ -87,6 +97,46 @@ HASHTAGS = {                  # A dictionary with keys of values you want to be 
 }
 ```
 
-To find your `WEBHOOK_URL`, you need to add ValueBot to your Slack team's integrations on the Slack web interface, which you can do in the next step:
+To find your `WEBHOOK_URL`, you need to add ValueBot to your Slack team's integrations on the Slack web interface, which you can do in the next step.
 
 ### Slack
+
+To integrate ValueBot with Slack, you need to set up Outgoing Webhooks and Incoming Webhooks.
+
+#### Outgoing Webhooks
+
+Outgoing Webhooks are used by ValueBot to "listen" to messages sent across an organization. To set it up, create a new Outoing Webhooks Integration at `https://[your team].slack.com/services/new`, and use the following settings:
+
+![Outgoing Settings 1](http://i.imgur.com/MCMsiNH.png)
+
+To get your trigger words, you can run the included helper function like so:
+
+```
+$ python
+>>> from app import trigger_list
+>>> trigger_list()
+```
+
+Simply paste the produced string into the input for "Trigger Word(s)." For the URL field, include the URL of the server where you're running ValueBot.
+
+For the cosmetic settings, it's recommended to identify ValueBot with a name and icon, although it's not strictly necessary.
+
+![Outgoing Settings 2](http://i.imgur.com/CfBoyyq.png)
+
+#### Incoming Webhooks
+
+Incoming Webhooks are used by ValueBot to send private messages of the generated lists to users. Ideally, we could use only Outgoing Webhooks to accomplish this, but as of ValueBot's creation, Slack's API does not support sending private messages with only Outgoing Webhooks. Go [bug Slack about it](https://api.slack.com/), if you'd prefer a simpler installation process.
+
+To configure Incoming Webhooks, create a new Incoming Webhooks ingegration at `https://[your team].slack.com/services/new`. The settings here are entirely optional, as ValueBot won't actually post to the channel you specify. The most important thing is the Webhook URL, which Slack generates for you. Take this url, and put it into your `config.py` as `WEBHOOK_URL`. Now, ValueBot knows how to send private messages to your organization.
+
+![Incoming Settings](http://i.imgur.com/rz3KPrQ.png)
+
+## Running the Server
+
+Once you've completed the set up, all that remains is to run the server that backs ValueBot. To do this, simply run the command:
+
+```
+$ python app.py [port]
+```
+
+Where `port` is an optional argument for which port the server should run on. Defaults to 4567. Once you have the server running, and you've hooked up Slack Webhooks, you're good to go! Now you can start calling out your co-workers, and keeping track of who's doing the best job espousing your organization's values.
