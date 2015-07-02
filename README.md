@@ -1,6 +1,6 @@
 # ValueBot
 
-A Slack bot for calling out coworkers for espousing your organization's values. The best way to use ValueBot is have it listen across all the channels of your team. That way, anyone can call out other team members without disrupting their workflow. If you prefer, it can also listen only on a channel you specify, for instance `#values` or `#valueboy`.
+A Slack bot for calling out coworkers for espousing your organization's values. The best way to use ValueBot is have it listen across all the channels of your team. That way, anyone can call out other team members without disrupting their workflow. If you prefer, it can also listen only on a channel you specify, for instance `#values` or `#valuebot`.
 
 ## Usage
 
