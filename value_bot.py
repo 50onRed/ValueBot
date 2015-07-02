@@ -19,6 +19,7 @@ class ValueBot():
         trigger = msg["trigger_word"]
         text = msg["text"]
         poster = msg["user_name"]
+        timestamp = msg["timestamp"].replace(".", "")
 
         if not trigger.startswith("#"):
             regex = re.compile(trigger + ':*\s*(.*)')
@@ -30,7 +31,7 @@ class ValueBot():
             if text.startswith("list"):
                 return self.__generateList(text, poster)
 
-        return self.__handleCallOut(trigger, text, poster)
+        return self.__handleCallOut(trigger, text, poster, timestamp)
 
     def sendPrivateMessage(self, recipient, title, table_text=None):
         text = "*{}*".format(title)
@@ -47,7 +48,7 @@ class ValueBot():
 
         return "PM-ed!"
 
-    def __handleCallOut(self, trigger, text, poster):
+    def __handleCallOut(self, trigger, text, poster, timestamp):
         value, user = None, None
 
         if trigger in self.valuesDict: # message started with hashtag
@@ -65,7 +66,7 @@ class ValueBot():
                 user = mentioned_users[0]
 
         if value and user:
-            post = Post(user, poster, value, text)
+            post = Post(user, poster, value, text, timestamp)
             if post.save():
                 return "Thanks, @{0}! I've recorded your call out under `{1}`.".format(poster, value)
             else:

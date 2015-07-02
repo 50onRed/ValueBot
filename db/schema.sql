@@ -5,5 +5,6 @@ create table posts (
   poster text not null,
   value text not null,
   text text not null,
-  posted_at timestamp not null
+  posted_at timestamp not null,
+  slack_timestamp text not null
 );

@@ -14,21 +14,29 @@ def init_db():
         print "DB schema initialized."
 
 class Post():
-    def __init__(self, user, poster, value, text):
+    def __init__(self, user, poster, value, text, slack_timestamp, posted_at=None):
         self.user = user
         self.poster = poster
         self.value = value
         self.text = text
-        self.posted_at = datetime.datetime.now()
+        if posted_at:
+            self.posted_at = posted_at
+        else:
+            self.posted_at = datetime.datetime.now()
+        self.slack_timestamp = slack_timestamp
 
     def save(self):
         con = connect_db()
 
         with con:
             con.execute(
-                "INSERT INTO posts(user, poster, value, text, posted_at) VALUES (?, ?, ?, ?, ?)",
-                (self.user, self.poster, self.value, self.text, self.posted_at))
+                "INSERT INTO posts(user, poster, value, text, posted_at, slack_timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+                (self.user, self.poster, self.value, self.text, self.posted_at, self.slack_timestamp))
             return True
+
+    @property
+    def postUrl(self):
+        return "http://50onred.slack.com/archives/general/{}".format(self.slack_timestamp)
 
     @classmethod
     def getPostsByUser(cls, user, date, month, year):
@@ -45,7 +53,7 @@ class Post():
 
             to_return = []
             for post in res:
-                to_return.append(Post(post[1], post[2], post[3], post[4]))
+                to_return.append(Post(post[1], post[2], post[3], post[4], post[6], posted_at=post[5]))
 
             return to_return
 
@@ -75,13 +83,15 @@ class Post():
 
             to_return = []
             for post in res:
-                to_return.append(Post(post[1], post[2], post[3], post[4]))
+                p = Post(post[1], post[2], post[3], post[4], post[6], posted_at=post[5])
+                to_return.append(p)
+                print p.postUrl
 
             return to_return
 
     @classmethod
     def getLeadersByValue(cls, value, date, month, year):
-        query = "SELECT user, COUNT(user) as user_occurence FROM posts"
+        query = "SELECT user, COUNT(user) as user_occurence, posted_at FROM posts"
         attrs = ()
         where_added = False
 
