@@ -6,17 +6,23 @@ A Slack bot for calling out coworkers for espousing your organization's values. 
 
 A call-out is a message that includes a username and a hashtag representing a value to call the user out for. You provide the list of hashtags to listen to in the config file (described below). For example, if I wanted to call out `@mary` for an innovative solution to a problem that's been bugging the team for a while, that message would look like:
 
-> @mary helped us all out with that \#innovative solution
+```
+@mary helped us all out with that \#innovative solution
+```
 
 ### Posting
 
 To get ValueBot to hear you, you need to start your message with either `valuebot` or with the hashtag you're using. Using the example above:
 
-> valuebot @mary that was one \#innovative solution!
+```
+valuebot @mary that was one \#innovative solution!
+```
 
 or
 
-> \#innovative @mary kudos for solving that problem!
+```
+\#innovative @mary kudos for solving that problem!
+```
 
 ### Getting Lists
 
@@ -28,7 +34,9 @@ Regular users can also ask ValueBot for lists, but are limited to only asking fo
 
 To get all the posts about a certain user, send a message to any channel that ValueBot is listening in with the following format:
 
-> valuebot list `user [time]`
+```
+valuebot list `user [time]`
+```
 
 - `user` should be the username of someone in your team.
   - Can also be 'me' to request posts about yourself (this command is also available to non-admin users).
@@ -40,7 +48,9 @@ To get all the posts about a certain user, send a message to any channel that Va
 
 To get all the posts with a certain value, send a message with the following format:
 
-> valuebot list `value [time]`
+```
+valuebot list `value [time]`
+```
 
 - `value` should be either:
   - 'all' to get posts across all values.
@@ -51,7 +61,9 @@ To get all the posts with a certain value, send a message with the following for
 
 To get the users with the most posts, send a message with the following format:
 
-> valuebot list leaders `value [time]`
+```
+valuebot list leaders `value [time]`
+```
 
 - `value` in the same format as above, to specify for which value ValueBot should find leaders.
 - `time` (optional) in the same format as above
