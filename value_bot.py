@@ -61,19 +61,18 @@ class ValueBot():
                     value = self.valuesDict[tag]
                     break # only use the first hashtag that matches a value
 
-        if value:
-            mentioned_users = [name.strip("@.,!?:;") for name in text.split() if name.startswith("@")]
-            if len(mentioned_users) >= 1:
-                user = mentioned_users[0]
+        mentioned_users = [name.strip("@.,!?:;") for name in text.split() if name.startswith("@")]
+        if len(mentioned_users) >= 1:
+            user = mentioned_users[0]
 
-        if value and user:
-            post = Post(user, poster, value, text, timestamp, channel)
-            if post.save():
-                return "Thanks, @{0}! I've recorded your call out under `{1}`.".format(poster, value)
-            else:
-                return "There was an error saving your call out, sorry!"
+        if not value or not user:
+            return ''
 
-        return ''
+        post = Post(user, poster, value, text, timestamp, channel)
+        if post.save():
+            return "Thanks, @{0}! I've recorded your call out under `{1}`.".format(poster, value)
+        else:
+            return "There was an error saving your call out, sorry!"
 
     def _generate_list(self, text, poster):
         tokens = [token.rstrip(".,!?:;").lower() for token in text.split()]

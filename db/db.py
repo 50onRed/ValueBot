@@ -19,10 +19,7 @@ class Post():
         self.poster = poster
         self.value = value
         self.text = text
-        if posted_at:
-            self.posted_at = posted_at
-        else:
-            self.posted_at = datetime.datetime.now()
+        self.posted_at = posted_at or datetime.datetime.now()
         self.slack_timestamp = slack_timestamp
         self.slack_channel = slack_channel
 
