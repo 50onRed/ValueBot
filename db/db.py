@@ -34,7 +34,15 @@ class Post():
 
     @property
     def post_url(self):
-        return "https://50onred.slack.com/archives/{}/{}".format(self.slack_channel, self.slack_timestamp)
+        return "https://50onred.slack.com/archives/{}/p{}".format(self.slack_channel, self.slack_timestamp)
+
+    @property
+    def message_info_for_table(self):
+        return "{}\n{}".format(self.text, self.post_url)
+
+    @property
+    def posted_at_formatted(self):
+        return datetime.datetime.strptime(self.posted_at, '%Y-%m-%d %H:%M:%S.%f').strftime('%B %d %Y %I:%M %p')
 
     @classmethod
     def get_posts_by_user(cls, user, date, month, year):
@@ -83,7 +91,6 @@ class Post():
             for post in res:
                 p = Post(post[1], post[2], post[3], post[4], post[6], post[7], posted_at=post[5])
                 to_return.append(p)
-                print p.postUrl
 
             return to_return
 

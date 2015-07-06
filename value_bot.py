@@ -169,7 +169,7 @@ class ValueBot():
                 table = new_left_aligned_table(["User", "Poster", "Value", "Message", "Posted"])
 
                 for post in posts:
-                    table.add_row([post.user, post.poster, post.value, post.text, post.posted_at])
+                    table.add_row([post.user, post.poster, post.value, post.message_info_for_table, post.posted_at_formatted])
                 return self.send_private_message(poster, title, table.get_string())
             else:
                 return self.send_private_message(poster, title, 'No posts found!')
