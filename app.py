@@ -1,4 +1,4 @@
-import sys
+import argparse
 import json
 from value_bot import ValueBot
 from flask import Flask, request
@@ -35,13 +35,14 @@ def post():
     return json.dumps(payload(to_return))
 
 def main():
-    args = sys.argv
-    port = 4567
-    if len(args) == 2:
-        try:
-            port = int(args[1])
-        except ValueError:
-            print "Invalid port specified, defaulting to {}".format(port)
+    parser = argparse.ArgumentParser(description="ValueBot: a SlackBot for your company's values")
+    parser.add_argument('-p', '--port', type=int, help='the port to run ValueBot on')
+    args = parser.parse_args()
+
+    if args.port:
+        port = args.port
+    else:
+        port = 4567
 
     app.run(host='0.0.0.0', port=port, debug=True)
 
