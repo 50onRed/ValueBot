@@ -6,5 +6,6 @@ create table posts (
   value text not null,
   text text not null,
   posted_at timestamp not null,
-  slack_timestamp text not null
+  slack_timestamp text not null,
+  slack_channel text not null
 );

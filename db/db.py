@@ -14,7 +14,7 @@ def init_db():
         print "DB schema initialized."
 
 class Post():
-    def __init__(self, user, poster, value, text, slack_timestamp, posted_at=None):
+    def __init__(self, user, poster, value, text, slack_timestamp, slack_channel, posted_at=None):
         self.user = user
         self.poster = poster
         self.value = value
@@ -24,19 +24,20 @@ class Post():
         else:
             self.posted_at = datetime.datetime.now()
         self.slack_timestamp = slack_timestamp
+        self.slack_channel = slack_channel
 
     def save(self):
         con = connect_db()
 
         with con:
             con.execute(
-                "INSERT INTO posts(user, poster, value, text, posted_at, slack_timestamp) VALUES (?, ?, ?, ?, ?, ?)",
-                (self.user, self.poster, self.value, self.text, self.posted_at, self.slack_timestamp))
+                "INSERT INTO posts(user, poster, value, text, posted_at, slack_timestamp, slack_channel) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (self.user, self.poster, self.value, self.text, self.posted_at, self.slack_timestamp, self.slack_channel))
             return True
 
     @property
     def postUrl(self):
-        return "http://50onred.slack.com/archives/general/{}".format(self.slack_timestamp)
+        return "https://50onred.slack.com/archives/{}/{}".format(self.slack_channel, self.slack_timestamp)
 
     @classmethod
     def getPostsByUser(cls, user, date, month, year):
@@ -53,7 +54,7 @@ class Post():
 
             to_return = []
             for post in res:
-                to_return.append(Post(post[1], post[2], post[3], post[4], post[6], posted_at=post[5]))
+                to_return.append(Post(post[1], post[2], post[3], post[4], post[6], post[7], posted_at=post[5]))
 
             return to_return
 
@@ -83,7 +84,7 @@ class Post():
 
             to_return = []
             for post in res:
-                p = Post(post[1], post[2], post[3], post[4], post[6], posted_at=post[5])
+                p = Post(post[1], post[2], post[3], post[4], post[6], post[7], posted_at=post[5])
                 to_return.append(p)
                 print p.postUrl
 
