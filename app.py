@@ -39,10 +39,7 @@ def main():
     parser.add_argument('-p', '--port', type=int, help='the port to run ValueBot on')
     args = parser.parse_args()
 
-    if args.port:
-        port = args.port
-    else:
-        port = 4567
+    port = args.port or 4567
 
     app.run(host='0.0.0.0', port=port, debug=True)
 
