@@ -7,7 +7,7 @@ A Slack bot for calling out coworkers for espousing your organization's values. 
 A call-out is a message that includes a username and a hashtag representing a value to call the user out for. You provide the list of hashtags to listen to in the config file (described below). For example, if I wanted to call out `@mary` for an innovative solution to a problem that's been bugging the team for a while, that message would look like:
 
 ```
-@mary helped us all out with that #innovative solution
+#innovative solution, @mary!
 ```
 
 ### Posting
@@ -24,6 +24,8 @@ or
 #innovative @mary kudos for solving that problem!
 ```
 
+You can post a message in either format on any channel that ValueBot is listening on, and it'll store the message in its database.
+
 ### Getting Lists
 
 Admins can request lists from ValueBot of posts about a certain user, of posts with a certain value, and of the users with the most posts about them. You define which users are admins in `options.py`, as described below.
@@ -32,7 +34,7 @@ Regular users can also ask ValueBot for lists, but are limited to only asking fo
 
 #### By User
 
-To get all the posts about a certain user, send a message to any channel that ValueBot is listening in with the following format:
+To get all the posts about a certain user, post a message to any channel that ValueBot is listening in with the following format:
 
 ```
 valuebot list [user] [time]
@@ -40,13 +42,13 @@ valuebot list [user] [time]
 
 - `user` should be the username of someone in your team.
   - Can also be 'me' to request posts about yourself (this command is also available to non-admin users).
-- `time` (optional) should be either:
+- `time` (optional). If no `time` is specified, it defaults to getting posts from all time.
   - 'today' to get the posts today.
   - `month [year]` to get the posts from that month. If no year is provided, it's assumed to be the current year.
 
 #### By Value
 
-To get all the posts with a certain value, send a message with the following format:
+To get all the posts with a certain value, post a message to any channel with the following format:
 
 ```
 valuebot list [value] [time]
@@ -59,7 +61,7 @@ valuebot list [value] [time]
 
 ### Leaders
 
-To get the users with the most posts, send a message with the following format:
+To get the users with the most posts, post a message with the following format:
 
 ```
 valuebot list leaders [value] [time]
