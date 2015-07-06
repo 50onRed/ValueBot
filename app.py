@@ -30,7 +30,7 @@ value_bot = ValueBot(
 
 @app.route('/', methods=['POST'])
 def post():
-    to_return = value_bot.handleIncomingMessage(request.form)
+    to_return = value_bot.handle_incoming_message(request.form)
 
     return json.dumps(payload(to_return))
 

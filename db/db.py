@@ -36,17 +36,17 @@ class Post():
             return True
 
     @property
-    def postUrl(self):
+    def post_url(self):
         return "https://50onred.slack.com/archives/{}/{}".format(self.slack_channel, self.slack_timestamp)
 
     @classmethod
-    def getPostsByUser(cls, user, date, month, year):
+    def get_posts_by_user(cls, user, date, month, year):
         query = "SELECT * FROM posts WHERE user = ?"
         attrs = (user,)
 
         if date or month:
             query += " AND posted_at BETWEEN ? AND ?"
-            attrs += cls.__getDateRange(date, month, year)
+            attrs += cls._get_date_range(date, month, year)
 
         con = connect_db()
         with con:
@@ -59,7 +59,7 @@ class Post():
             return to_return
 
     @classmethod
-    def getPostsByValue(cls, value, date, month, year):
+    def get_posts_by_value(cls, value, date, month, year):
         query = "SELECT * FROM posts"
         attrs = ()
         where_added = False
@@ -76,7 +76,7 @@ class Post():
                 query += " WHERE"
 
             query += " posted_at BETWEEN ? AND ?"
-            attrs += cls.__getDateRange(date, month, year)
+            attrs += cls._get_date_range(date, month, year)
 
         con = connect_db()
         with con:
@@ -91,7 +91,7 @@ class Post():
             return to_return
 
     @classmethod
-    def getLeadersByValue(cls, value, date, month, year):
+    def get_leaders_by_value(cls, value, date, month, year):
         query = "SELECT user, COUNT(user) as user_occurence, posted_at FROM posts"
         attrs = ()
         where_added = False
@@ -108,7 +108,7 @@ class Post():
                 query += " WHERE"
 
             query += " posted_at BETWEEN ? AND ?"
-            attrs += cls.__getDateRange(date, month, year)
+            attrs += cls._get_date_range(date, month, year)
 
         query += " GROUP BY user ORDER BY user_occurence DESC"
 
@@ -124,7 +124,7 @@ class Post():
             return to_return
 
     @classmethod
-    def __getDateRange(cls, date, month, year):
+    def _get_date_range(cls, date, month, year):
         start, end = None, None
 
         if date:

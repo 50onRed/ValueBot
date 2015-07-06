@@ -11,11 +11,11 @@ MONTHS=["january", "february", "march", "april", "may", "june",
 class ValueBot():
     def __init__(self, admins, hashtags, webhook_url):
         self.admins = admins
-        self.valuesDict = self.__generateValuesDict(hashtags)
+        self.valuesDict = self._generate_values_dict(hashtags)
         self.values = hashtags.keys()
         self.webhook_url = webhook_url
 
-    def handleIncomingMessage(self, msg):
+    def handle_incoming_message(self, msg):
         trigger = msg["trigger_word"]
         text = msg["text"]
         poster = msg["user_name"]
@@ -30,11 +30,11 @@ class ValueBot():
                 return "TODO: WRITE HELP MESSAGE"
 
             if text.startswith("list"):
-                return self.__generateList(text, poster)
+                return self._generate_list(text, poster)
 
-        return self.__handleCallOut(trigger, text, poster, timestamp, channel)
+        return self._handle_call_out(trigger, text, poster, timestamp, channel)
 
-    def sendPrivateMessage(self, recipient, title, table_text=None):
+    def send_private_message(self, recipient, title, table_text=None):
         text = "*{}*".format(title)
 
         if table_text:
@@ -49,7 +49,7 @@ class ValueBot():
 
         return "PM-ed!"
 
-    def __handleCallOut(self, trigger, text, poster, timestamp, channel):
+    def _handle_call_out(self, trigger, text, poster, timestamp, channel):
         value, user = None, None
 
         if trigger in self.valuesDict: # message started with hashtag
@@ -75,7 +75,7 @@ class ValueBot():
 
         return ''
 
-    def __generateList(self, text, poster):
+    def _generate_list(self, text, poster):
         tokens = [token.rstrip(".,!?:;").lower() for token in text.split()]
         del(tokens[0]) # get rid of 'list' token
         length = len(tokens)
@@ -140,45 +140,45 @@ class ValueBot():
                         year -= 1
 
         if leaders and value:
-            leaders = Post.getLeadersByValue(value, date, month, year)
+            leaders = Post.get_leaders_by_value(value, date, month, year)
 
-            title = "Leaders in {}{}".format(value, dateClause(date, month, year))
+            title = "Leaders in {}{}".format(value, date_clause(date, month, year))
 
             if leaders:
-                table = newLeftAlignedTable(["User", "# Posts"])
+                table = new_left_aligned_table(["User", "# Posts"])
 
                 for user in leaders:
                     table.add_row([user['user'], user['posts']])
 
-                return self.sendPrivateMessage(poster, title, table.get_string())
+                return self.send_private_message(poster, title, table.get_string())
             else:
-                return self.sendPrivateMessage(poster, title, 'No leaders found')
+                return self.send_private_message(poster, title, 'No leaders found')
         else:
             posts = None
 
             title = "Posts "
             if user:
-                posts = Post.getPostsByUser(user, date, month, year)
+                posts = Post.get_posts_by_user(user, date, month, year)
                 title += "about @{}".format(user)
             elif value:
-                posts = Post.getPostsByValue(value, date, month, year)
+                posts = Post.get_posts_by_value(value, date, month, year)
                 title += "in {}".format(value)
 
-            title += dateClause(date, month, year)
+            title += date_clause(date, month, year)
 
             if posts:
-                table = newLeftAlignedTable(["User", "Poster", "Value", "Message", "Posted"])
+                table = new_left_aligned_table(["User", "Poster", "Value", "Message", "Posted"])
 
                 for post in posts:
                     table.add_row([post.user, post.poster, post.value, post.text, post.posted_at])
-                return self.sendPrivateMessage(poster, title, table.get_string())
+                return self.send_private_message(poster, title, table.get_string())
             else:
-                return self.sendPrivateMessage(poster, title, 'No posts found!')
+                return self.send_private_message(poster, title, 'No posts found!')
 
         return ''
 
     # Flattens hashtag dictionary, for easy mapping from hashtags to corresponding values
-    def __generateValuesDict(self, hashtags):
+    def _generate_values_dict(self, hashtags):
         valuesDict = {}
 
         for value in hashtags:
@@ -187,13 +187,13 @@ class ValueBot():
 
         return valuesDict
 
-def newLeftAlignedTable(attrs):
+def new_left_aligned_table(attrs):
     t = PrettyTable(attrs)
     for a in attrs:
         t.align[a] = "l"
     return t
 
-def dateClause(date, month, year):
+def date_clause(date, month, year):
     clause = ""
 
     if (date or month):
