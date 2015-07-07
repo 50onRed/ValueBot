@@ -72,25 +72,16 @@ valuebot list leaders [value] [time]
 
 ## Setting it up
 
-You can set up ValueBot on your own server/Slack team in three steps: create the databse, create a config file, and set up Slack's Incoming/Outgoing WebHooks.
-
-### Database
-
-ValueBot is powered by a SQLite database contained in the `db/` folder. To get the databse set up, simply run the following commands from the project directory:
-
-```
-$ sqlite3 db/valuebot.sqlite3
-$ python
->>> from db.db import init_db
->>> init_db()
-```
+You can set up ValueBot on your own server/Slack team in three steps: create a config file, create the database, and set up Slack's Incoming/Outgoing WebHooks.
 
 ### Config file
 
-To start, create a file named config.py in the root of this directory. The three options you need are `WEBHOOK_URL`, `ADMINS`, and `HASHTAGS`.
+To start, create a file named config.py in the root of this directory. The four options you need are `SQLALCHEMY_DATABASE_URL`, `WEBHOOK_URL`, `ADMINS`, and `HASHTAGS`.
 
 ```
 # config.py
+
+SQLALCHEMY_DATABASE_URI="sqlite:///db/valuebot.sqlite3" # Or wherever you want the database to live
 
 WEBHOOK_URL = "YOUR_URL_HERE" # The URL configured on Slack for Incoming Webhooks
 
@@ -111,7 +102,17 @@ HASHTAGS = {                  # A dictionary with keys of values you want to be 
 }
 ```
 
+You can use the `SQLALCHEMY_DATABASE_URI` value provided above as-is, in which case the data will be stored in `db/valuebot.sqlite3` in this directory. Alternatively, you can provide a URI to another SQL database, which can be with SQLite, MySQL, PostgreSQL, or [any database supported by SQLAlchemy](http://docs.sqlalchemy.org/en/rel_1_0/dialects/index.html).
+
 To find your `WEBHOOK_URL`, you need to add ValueBot to your Slack team's integrations on the Slack web interface, which you can do in the next step.
+
+### Database
+
+To get the database set up, first make sure that you've specified `SQLALCHEMY_DATABASE_URI` correctly in `config.py`. Then, simply run the following command from the project directory to set up the database schema:
+
+```
+python app.py db upgrade
+```
 
 ### Slack
 
@@ -126,9 +127,7 @@ Outgoing Webhooks are used by ValueBot to "listen" to messages sent across an or
 To get your trigger words, you can run the included helper function like so:
 
 ```
-$ python
->>> from app import trigger_list
->>> trigger_list()
+python app.py trigger_list
 ```
 
 Simply paste the produced string into the input for "Trigger Word(s)." For the URL field, include the URL of the server where you're running ValueBot.
@@ -150,7 +149,7 @@ To configure Incoming Webhooks, create a new Incoming Webhooks ingegration at `h
 Once you've completed the set up, all that remains is to run the server that backs ValueBot. To do this, simply run the command:
 
 ```
-$ python app.py [port]
+$ python app.py runserver [-p port]
 ```
 
 Where `port` is an optional argument for which port the server should run on. Defaults to 4567. Once you have the server running, and you've hooked up Slack Webhooks, you're good to go! Now you can start calling out your co-workers, and keeping track of who's doing the best job espousing your organization's values.

@@ -2,7 +2,8 @@ import re
 import datetime
 import requests
 import json
-from db.db import Post
+from db.db import db
+from db.post import Post
 from prettytable import PrettyTable
 
 MONTHS=["january", "february", "march", "april", "may", "june",
@@ -34,20 +35,20 @@ class ValueBot():
 
         return self._handle_call_out(trigger, text, poster, timestamp, channel)
 
-    def send_private_message(self, recipient, title, table_text=None):
+    def send_message(self, recipient, title, table_text=None):
         text = "*{}*".format(title)
 
         if table_text:
             text += "\n```{}```".format(table_text)
 
         payload = {
-            "channel": "@{}".format(recipient),
+            "channel": recipient,
             "text": text
         }
         data = { "payload": json.dumps(payload) }
         r = requests.post(self.webhook_url, data=data)
 
-        return "PM-ed!"
+        return "Message sent!"
 
     def _handle_call_out(self, trigger, text, poster, timestamp, channel):
         value, user = None, None
@@ -69,9 +70,12 @@ class ValueBot():
             return ''
 
         post = Post(user, poster, value, text, timestamp, channel)
-        if post.save():
+        db.session.add(post)
+
+        try:
+            db.session.commit()
             return "Thanks, @{0}! I've recorded your call out under `{1}`.".format(poster, value)
-        else:
+        except:
             return "There was an error saving your call out, sorry!"
 
     def _generate_list(self, text, poster):
@@ -138,29 +142,26 @@ class ValueBot():
                     if now.month < date:
                         year -= 1
 
+        poster_username = "@{}".format(poster)
+
         if leaders and value:
-            leaders = Post.get_leaders_by_value(value, date, month, year)
+            table = self.get_leaders_table(value, date, month, year)
 
             title = "Leaders in {}{}".format(value, date_clause(date, month, year))
 
-            if leaders:
-                table = new_left_aligned_table(["User", "# Posts"])
-
-                for user in leaders:
-                    table.add_row([user['user'], user['posts']])
-
-                return self.send_private_message(poster, title, table.get_string())
+            if table:
+                return self.send_message(poster_username, title, table.get_string())
             else:
-                return self.send_private_message(poster, title, 'No leaders found')
+                return self.send_message(poster_username, title, 'No leaders found')
         else:
             posts = None
 
             title = "Posts "
             if user:
-                posts = Post.get_posts_by_user(user, date, month, year)
+                posts = Post.posts_by_user(user, date, month, year).all()
                 title += "about @{}".format(user)
             elif value:
-                posts = Post.get_posts_by_value(value, date, month, year)
+                posts = Post.posts_by_value(value, date, month, year).all()
                 title += "in {}".format(value)
 
             title += date_clause(date, month, year)
@@ -170,11 +171,24 @@ class ValueBot():
 
                 for post in posts:
                     table.add_row([post.user, post.poster, post.value, post.message_info_for_table, post.posted_at_formatted])
-                return self.send_private_message(poster, title, table.get_string())
+                return self.send_message(poster_username, title, table.get_string())
             else:
-                return self.send_private_message(poster, title, 'No posts found!')
+                return self.send_message(poster_username, title, 'No posts found!')
 
         return ''
+
+    def get_leaders_table(self, value, date, month, year):
+        leaders = Post.leaders_by_value(value, date, month, year).all()
+
+        if len(leaders) == 0:
+            return None
+
+        table = new_left_aligned_table(["User", "# Posts"])
+
+        for user in leaders:
+            table.add_row([user[0], user[1]])
+
+        return table
 
     # Flattens hashtag dictionary, for easy mapping from hashtags to corresponding values
     def _generate_values_dict(self, hashtags):
