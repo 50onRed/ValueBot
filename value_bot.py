@@ -2,7 +2,8 @@ import re
 import datetime
 import requests
 import json
-from db.db import Post
+from db.db import db
+from db.post import Post
 from prettytable import PrettyTable
 
 MONTHS=["january", "february", "march", "april", "may", "june",
@@ -69,9 +70,12 @@ class ValueBot():
             return ''
 
         post = Post(user, poster, value, text, timestamp, channel)
-        if post.save():
+        db.session.add(post)
+
+        try:
+            db.session.commit()
             return "Thanks, @{0}! I've recorded your call out under `{1}`.".format(poster, value)
-        else:
+        except:
             return "There was an error saving your call out, sorry!"
 
     def _generate_list(self, text, poster):
@@ -157,10 +161,10 @@ class ValueBot():
 
             title = "Posts "
             if user:
-                posts = Post.get_posts_by_user(user, date, month, year)
+                posts = Post.posts_by_user(user, date, month, year).all()
                 title += "about @{}".format(user)
             elif value:
-                posts = Post.get_posts_by_value(value, date, month, year)
+                posts = Post.posts_by_value(value, date, month, year).all()
                 title += "in {}".format(value)
 
             title += date_clause(date, month, year)

@@ -2,10 +2,7 @@ import argparse
 import json
 from value_bot import ValueBot
 from flask import Flask, request
-from db.db import init_db
-
-app = Flask(__name__)
-app.config.from_pyfile('./config.py')
+from db.db import db
 
 def trigger_list():
     hashtags = app.config["HASHTAGS"]
@@ -23,16 +20,24 @@ def payload(text):
         'link_names': 1
     }
 
-value_bot = ValueBot(
-    admins=app.config["ADMINS"],
-    hashtags=app.config["HASHTAGS"],
-    webhook_url=app.config["WEBHOOK_URL"])
+def create_app():
+    app = Flask(__name__)
+    app.config.from_pyfile('./config.py')
 
-@app.route('/', methods=['POST'])
-def post():
-    to_return = value_bot.handle_incoming_message(request.form)
+    db.init_app(app)
 
-    return json.dumps(payload(to_return))
+    value_bot = ValueBot(
+        admins=app.config["ADMINS"],
+        hashtags=app.config["HASHTAGS"],
+        webhook_url=app.config["WEBHOOK_URL"])
+
+    @app.route('/', methods=['POST'])
+    def post():
+        to_return = value_bot.handle_incoming_message(request.form)
+
+        return json.dumps(payload(to_return))
+
+    return app
 
 def main():
     parser = argparse.ArgumentParser(description="ValueBot: a SlackBot for your company's values")
@@ -41,6 +46,7 @@ def main():
 
     port = args.port or 4567
 
+    app = create_app()
     app.run(host='0.0.0.0', port=port, debug=True)
 
 if __name__ == "__main__":
