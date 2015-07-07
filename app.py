@@ -1,18 +1,9 @@
-import argparse
 import json
 from value_bot import ValueBot
 from flask import Flask, request
+from flask.ext.script import Manager
+from flask.ext.migrate import Migrate, MigrateCommand
 from db.db import db
-
-def trigger_list():
-    hashtags = app.config["HASHTAGS"]
-    triggers = {"valuebot"}
-
-    for value in hashtags:
-        for hashtag in hashtags[value]:
-            triggers.add(hashtag)
-
-    return ','.join(triggers)
 
 def payload(text):
     return {
@@ -25,6 +16,8 @@ def create_app():
     app.config.from_pyfile('./config.py')
 
     db.init_app(app)
+
+    migrate = Migrate(app, db)
 
     value_bot = ValueBot(
         admins=app.config["ADMINS"],
@@ -39,15 +32,21 @@ def create_app():
 
     return app
 
-def main():
-    parser = argparse.ArgumentParser(description="ValueBot: a SlackBot for your company's values")
-    parser.add_argument('-p', '--port', type=int, help='the port to run ValueBot on')
-    args = parser.parse_args()
+app = create_app()
+manager = Manager(app)
 
-    port = args.port or 4567
+manager.add_command('db', MigrateCommand)
 
-    app = create_app()
-    app.run(host='0.0.0.0', port=port, debug=True)
+@manager.command
+def trigger_list():
+    hashtags = app.config["HASHTAGS"]
+    triggers = {"valuebot"}
+
+    for value in hashtags:
+        for hashtag in hashtags[value]:
+            triggers.add(hashtag)
+
+    print ','.join(triggers)
 
 if __name__ == "__main__":
-    main()
+    manager.run()
