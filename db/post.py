@@ -1,5 +1,5 @@
 import datetime
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, func, desc
 from calendar import monthrange
 from .db import db
 
@@ -61,37 +61,19 @@ class Post(db.Model):
         return query
 
     @classmethod
-    def get_leaders_by_value(cls, value, date, month, year):
-        query = "SELECT user, COUNT(user) as user_occurence, posted_at FROM posts"
-        attrs = ()
-        where_added = False
+    def leaders_by_value(cls, value, date, month, year):
+        query = db.session.query(Post.user, func.count(Post.id).label('user_occurence')
+            ).group_by(Post.user
+            ).order_by(desc('user_occurence'))
 
         if value and value != "all":
-            where_added = True
-            query += " WHERE value = ?"
-            attrs += (value,)
+            query = query.filter(Post.value == value)
 
         if date or month:
-            if where_added:
-                query += " AND"
-            else:
-                query += " WHERE"
+            dates = cls._get_date_range(date, month, year)
+            query = query.filter(Post.posted_at >= dates[0], Post.posted_at <= dates[1])
 
-            query += " posted_at BETWEEN ? AND ?"
-            attrs += cls._get_date_range(date, month, year)
-
-        query += " GROUP BY user ORDER BY user_occurence DESC"
-
-        print query
-        con = connect_db()
-        with con:
-            res = con.execute(query, attrs)
-
-            to_return = []
-            for user in res:
-                to_return.append({ 'user': user[0], 'posts': user[1] })
-
-            return to_return
+        return query
 
     @classmethod
     def _get_date_range(cls, date, month, year):
