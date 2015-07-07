@@ -111,7 +111,7 @@ To find your `WEBHOOK_URL`, you need to add ValueBot to your Slack team's integr
 To get the database set up, first make sure that you've specified `SQLALCHEMY_DATABASE_URI` correctly in `config.py`. Then, simply run the following command from the project directory to set up the database schema:
 
 ```
-python app.py db upgrade
+$ python app.py db upgrade
 ```
 
 ### Slack
@@ -127,7 +127,7 @@ Outgoing Webhooks are used by ValueBot to "listen" to messages sent across an or
 To get your trigger words, you can run the included helper function like so:
 
 ```
-python app.py trigger_list
+$ python app.py trigger_list
 ```
 
 Simply paste the produced string into the input for "Trigger Word(s)." For the URL field, include the URL of the server where you're running ValueBot.
@@ -153,3 +153,13 @@ $ python app.py runserver [-p port]
 ```
 
 Where `port` is an optional argument for which port the server should run on. Defaults to 4567. Once you have the server running, and you've hooked up Slack Webhooks, you're good to go! Now you can start calling out your co-workers, and keeping track of who's doing the best job espousing your organization's values.
+
+## Extra
+
+ValueBot also comes with a convenient function to send a list of yesterday's value leaders to your slack organization. The command to do this is:
+
+```
+$ python app.py send_yesterday_leaders [channel]
+```
+
+Where `channel` is any channel in your Slack organization. For instance, you could specify `"#general"` to send an update to the whole organization about who led the team in call-outs the previous day. You can also hook this into a `cron` job to automate sending this message every morning, for instance.

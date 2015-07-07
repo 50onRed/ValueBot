@@ -1,4 +1,5 @@
 import json
+import datetime
 from value_bot import ValueBot
 from flask import Flask, request
 from flask.ext.script import Manager
@@ -19,11 +20,6 @@ def create_app():
 
     migrate = Migrate(app, db)
 
-    value_bot = ValueBot(
-        admins=app.config["ADMINS"],
-        hashtags=app.config["HASHTAGS"],
-        webhook_url=app.config["WEBHOOK_URL"])
-
     @app.route('/', methods=['POST'])
     def post():
         to_return = value_bot.handle_incoming_message(request.form)
@@ -33,9 +29,26 @@ def create_app():
     return app
 
 app = create_app()
-manager = Manager(app)
+value_bot = ValueBot(
+    admins=app.config["ADMINS"],
+    hashtags=app.config["HASHTAGS"],
+    webhook_url=app.config["WEBHOOK_URL"])
 
+manager = Manager(app)
 manager.add_command('db', MigrateCommand)
+
+@manager.command
+def send_yesterday_leaders(channel):
+    now = datetime.datetime.now()
+    yesterday = now - datetime.timedelta(days=1)
+
+    with app.app_context():
+        table = value_bot.get_leaders_table("all", yesterday.day, yesterday.month, yesterday.year)
+
+        if table:
+            return value_bot.send_message(channel, "Yesterday's Leaders", table.get_string())
+        else:
+            return value_bot.send_message(channel, "Yesterday's Leaders", 'No leaders found')
 
 @manager.command
 def trigger_list():
