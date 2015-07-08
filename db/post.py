@@ -42,7 +42,7 @@ class Post(db.Model):
         query = cls.query.filter(Post.user == user)
 
         if date or month:
-            dates = cls._get_date_range(date, month, year)
+            dates = _get_date_range(date, month, year)
             query = query.filter(Post.posted_at >= dates[0], Post.posted_at <= dates[1])
 
         return query
@@ -55,7 +55,7 @@ class Post(db.Model):
             query = query.filter(Post.value == value)
 
         if date or month:
-            dates = cls._get_date_range(date, month, year)
+            dates = _get_date_range(date, month, year)
             query = query.filter(Post.posted_at >= dates[0], Post.posted_at <= dates[1])
 
         return query
@@ -70,21 +70,20 @@ class Post(db.Model):
             query = query.filter(Post.value == value)
 
         if date or month:
-            dates = cls._get_date_range(date, month, year)
+            dates = _get_date_range(date, month, year)
             query = query.filter(Post.posted_at >= dates[0], Post.posted_at <= dates[1])
 
         return query
 
-    @classmethod
-    def _get_date_range(cls, date, month, year):
-        start, end = None, None
+def _get_date_range(date, month, year):
+    start, end = None, None
 
-        if date:
-            start = datetime.datetime(year, month, date)
-            end = datetime.datetime(year, month, date, 23, 59, 59)
-        else:
-            start = datetime.datetime(year, month, 1)
-            days_in_month = monthrange(year, month)[1]
-            end = datetime.datetime(year, month, days_in_month, 23, 59, 59)
+    if date:
+        start = datetime.datetime(year, month, date)
+        end = datetime.datetime(year, month, date, 23, 59, 59)
+    else:
+        start = datetime.datetime(year, month, 1)
+        days_in_month = monthrange(year, month)[1]
+        end = datetime.datetime(year, month, days_in_month, 23, 59, 59)
 
-        return (start, end)
+    return (start, end)
