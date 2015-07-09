@@ -14,6 +14,7 @@ class ValueBot():
         self.admins = admins
         self.valuesDict = self._generate_values_dict(hashtags)
         self.values = hashtags.keys()
+        self.hashtags = hashtags
         self.webhook_url = webhook_url
 
     def handle_incoming_message(self, msg):
@@ -28,12 +29,30 @@ class ValueBot():
             text = regex.match(text).group(1) # only the text after the trigger command
 
             if text.lower() in ["help", "man"]:
-                return "TODO: WRITE HELP MESSAGE"
+                return self._help_message()
 
             if text.startswith("list"):
                 return self._generate_list(text, poster)
 
         return self._handle_call_out(trigger, text, poster, timestamp, channel)
+
+    def _help_message(self):
+        to_return = "*ValueBot Usage*"
+        to_return += "\nA call-out is a message that includes a team member you want to call out, and a hashtag of the value you want to call them out for."
+        to_return += "\nThe list of values and hashtags are as follows:"
+
+        for value in self.hashtags:
+            to_return += "\n> {}".format(value.title())
+            for hashtag in self.hashtags[value]:
+                print to_return
+                to_return += "\n> -- `{}`".format(hashtag)
+
+        to_return += "\n\nTo get ValueBot to hear your call-out, start your message either with the hashtag, or with `valuebot`. For example:"
+        to_return += "\n```valuebot @mary #got-shit-done yesterday!```"
+        to_return += "\n```valuebot Thanks @jane for being so #curious```"
+        to_return += "\n```#supportive Thanks @mike for your help on that thing this morning!```"
+
+        return to_return
 
     def send_message(self, recipient, title, table_text=None):
         text = "*{}*".format(title)
