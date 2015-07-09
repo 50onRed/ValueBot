@@ -42,10 +42,10 @@ class ValueBot():
         to_return += "\nThe list of values and hashtags are as follows:"
 
         for value in self.hashtags:
-            to_return += "\n> {}".format(value.title())
-            for hashtag in self.hashtags[value]:
-                print to_return
-                to_return += "\n> -- `{}`".format(hashtag)
+            to_return += "\n> *{}:* ".format(value.title())
+
+            hashtags = map(lambda h: "`{}`".format(h), self.hashtags[value])
+            to_return += ", ".join(hashtags)
 
         to_return += "\n\nTo get ValueBot to hear your call-out, start your message either with the hashtag, or with `valuebot`. For example:"
         to_return += "\n```valuebot @mary #got-shit-done yesterday!```"
