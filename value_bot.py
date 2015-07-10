@@ -87,6 +87,9 @@ class ValueBot():
         if len(mentioned_users) >= 1:
             user = self._user_name_of_user_id(mentioned_users[0])
 
+            if user == None:
+                return "Error finding specified user."
+
         if not value or not user:
             return ''
 
@@ -235,9 +238,8 @@ class ValueBot():
             try:
                 response_data = r.json()
                 user_name = response_data["user"]["name"]
-
                 self.username_cache[user_id] = user_name
-                print user_name
+
                 return user_name
             except ValueError:
                 return None
