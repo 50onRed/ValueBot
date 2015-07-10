@@ -39,7 +39,7 @@ class ValueBot():
     def _help_message(self):
         to_return = "*ValueBot Usage*"
         to_return += "\nA call-out is a message that includes a team member you want to call out, and a hashtag of the value you want to call them out for."
-        to_return += "\nThe list of values and hashtags are as follows:"
+        to_return += "\n\nThe list of values and hashtags are as follows:"
 
         for value in self.hashtags:
             to_return += "\n> *{}:* ".format(value.title())
@@ -47,7 +47,7 @@ class ValueBot():
             hashtags = map(lambda h: "`{}`".format(h), self.hashtags[value])
             to_return += ", ".join(hashtags)
 
-        to_return += "\n\nTo get ValueBot to hear your call-out, start your message either with the hashtag, or with `valuebot`. For example:"
+        to_return += "\nTo get ValueBot to hear your call-out, start your message either with the hashtag, or with `valuebot`. For example:"
         to_return += "\n```valuebot @mary #got-shit-done yesterday!```"
         to_return += "\n```valuebot Thanks @jane for being so #curious```"
         to_return += "\n```#supportive Thanks @mike for your help on that thing this morning!```"
