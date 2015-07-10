@@ -10,12 +10,14 @@ MONTHS=["january", "february", "march", "april", "may", "june",
         "july", "august", "september", "october", "november", "december"]
 
 class ValueBot():
-    def __init__(self, admins, hashtags, webhook_url):
+    def __init__(self, admins, hashtags, webhook_url, slack_token):
         self.admins = admins
         self.valuesDict = self._generate_values_dict(hashtags)
         self.values = hashtags.keys()
         self.hashtags = hashtags
         self.webhook_url = webhook_url
+        self.slack_token = slack_token
+        self.username_cache = {}
 
     def handle_incoming_message(self, msg):
         trigger = msg["trigger_word"]
@@ -81,9 +83,9 @@ class ValueBot():
                     value = self.valuesDict[tag]
                     break # only use the first hashtag that matches a value
 
-        mentioned_users = [name.strip("@.,!?:;") for name in text.split() if name.startswith("@")]
+        mentioned_users = [name.strip("@.,!?:;<>") for name in text.split() if name.startswith("<@")]
         if len(mentioned_users) >= 1:
-            user = mentioned_users[0]
+            user = self._user_name_of_user_id(mentioned_users[0])
 
         if not value or not user:
             return ''
@@ -218,6 +220,29 @@ class ValueBot():
                 valuesDict[hashtag] = value
 
         return valuesDict
+
+    def _user_name_of_user_id(self, user_id):
+        if user_id in self.username_cache:
+            return self.username_cache[user_id]
+
+        data = {
+            "token": self.slack_token,
+            "user": user_id
+        }
+        r = requests.post("https://slack.com/api/users.info", data=data)
+        
+        if r.status_code == 200:
+            try:
+                response_data = r.json()
+                user_name = response_data["user"]["name"]
+
+                self.username_cache[user_id] = user_name
+                print user_name
+                return user_name
+            except ValueError:
+                return None
+        else:
+            return None
 
 def new_left_aligned_table(attrs):
     t = PrettyTable(attrs)

@@ -32,7 +32,8 @@ app = create_app()
 value_bot = ValueBot(
     admins=app.config["ADMINS"],
     hashtags=app.config["HASHTAGS"],
-    webhook_url=app.config["WEBHOOK_URL"])
+    webhook_url=app.config["WEBHOOK_URL"],
+    slack_token=app.config["SLACK_TOKEN"])
 
 manager = Manager(app)
 manager.add_command('db', MigrateCommand)
