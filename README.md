@@ -81,16 +81,17 @@ To start, create a file named config.py in the root of this directory. The four 
 ```
 # config.py
 
-SQLALCHEMY_DATABASE_URI="sqlite:///db/valuebot.sqlite3" # Or wherever you want the database to live
+SQLALCHEMY_DATABASE_URI = "sqlite:///db/valuebot.sqlite3" # Or wherever you want the database to live
 
-WEBHOOK_URL = "YOUR_URL_HERE" # The URL configured on Slack for Incoming Webhooks
+WEBHOOK_URL = "YOUR_URL_HERE"   # The URL configured on Slack for Incoming Webhooks
+SLACK_TOKEN = "YOUR_TOKEN_HERE" # The token for the Slack API you create in the next step
 
-ADMINS = {"admin", "admin2"}  # A set of usernames corresponding to the users in
-                              # your team to whom you want to give admin privileges.
+ADMINS = {"admin", "admin2"}    # A set of usernames corresponding to the users in
+                                # your team to whom you want to give admin privileges.
 
-HASHTAGS = {                  # A dictionary with keys of values you want to be able
-  'innovation': {             # to call people out for, corresponding to sets of
-    '#innovation',            # hashtags that users can use to refer to those values.
+HASHTAGS = {                    # A dictionary with keys of values you want to be able
+  'innovation': {               # to call people out for, corresponding to sets of
+    '#innovation',              # hashtags that users can use to refer to those values.
     '#innovative',
     '#be-innovative' 
   },
@@ -116,7 +117,7 @@ $ python app.py db upgrade
 
 ### Slack
 
-To integrate ValueBot with Slack, you need to set up Outgoing Webhooks and Incoming Webhooks.
+To integrate ValueBot with Slack, you need to set up Outgoing Webhooks, Incoming Webhooks, and the Slack API.
 
 #### Outgoing Webhooks
 
@@ -143,6 +144,16 @@ Incoming Webhooks are used by ValueBot to send private messages of the generated
 To configure Incoming Webhooks, create a new Incoming Webhooks ingegration at `https://[your team].slack.com/services/new`. The settings here are entirely optional, as ValueBot won't actually post to the channel you specify. The most important thing is the Webhook URL, which Slack generates for you. Take this url, and put it into your `config.py` as `WEBHOOK_URL`. Now, ValueBot knows how to send private messages to your organization.
 
 ![Incoming Settings](http://i.imgur.com/rz3KPrQ.png)
+
+#### Slack API
+
+ValueBot uses the Slack API to figure out what users are being mentioned in call-out posts. It's not ideal, but this is essentially necessary to get around the issue [outlined in this Gist](https://gist.github.com/ernesto-jimenez/11276103), in which Outgoing webhooks doesn't include username information. Once again, this isn't ideal, and you can go [bug Slack about it](https://api.slack.com/) to get this feature added to Outgoing Webhooks :)
+
+To configure ValueBot to get around this, you simply need to generate a Slack Web API token on the [API homepage here](https://api.slack.com/web):
+
+![Slack Web API](http://i.imgur.com/VAbt9UQ.png)
+
+Once you have this token, put it into your `config.py` as `SLACK_TOKEN` and you're good to go!
 
 ## Running the Server
 
