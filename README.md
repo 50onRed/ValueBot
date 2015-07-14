@@ -174,3 +174,11 @@ $ python app.py send_yesterday_leaders [channel]
 ```
 
 Where `channel` is any channel in your Slack organization. For instance, you could specify `"#general"` to send an update to the whole organization about who led the team in call-outs the previous day. You can also hook this into a `cron` job to automate sending this message every morning, for instance.
+
+Similarly, valuebot also includes a command to send a reminder to a channel to post call outs today:
+
+```
+$ python app.py send_callout_reminder [channel]
+```
+
+Where `channel` is again any channel in your organization.

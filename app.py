@@ -52,6 +52,10 @@ def send_yesterday_leaders(channel):
             return value_bot.send_message(channel, "Yesterday's Leaders", 'No leaders found')
 
 @manager.command
+def send_callout_reminder(channel):
+    value_bot.send_message(channel, "Daily reminder to call out team members for embodying the core values today!", None)
+
+@manager.command
 def trigger_list():
     hashtags = app.config["HASHTAGS"]
     triggers = {"valuebot"}
