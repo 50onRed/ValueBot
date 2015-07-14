@@ -41,10 +41,10 @@ valuebot list [user] [time]
 ```
 
 - `user` should be the username of someone in your team.
-  - Can also be 'me' to request posts about yourself (this command is also available to non-admin users).
+    - Can also be 'me' to request posts about yourself (this command is also available to non-admin users).
 - `time` (optional). If no `time` is specified, it defaults to getting posts from all time.
-  - 'today' to get the posts today.
-  - `month [year]` to get the posts from that month. If no year is provided, it's assumed to be the current year.
+    - 'today' to get the posts today.
+    - `month [year]` to get the posts from that month. If no year is provided, it's assumed to be the current year.
 
 #### By Value
 
@@ -55,8 +55,8 @@ valuebot list [value] [time]
 ```
 
 - `value` should be either:
-  - 'all' to get posts across all values.
-  - The value you want to search for, as defined in your `options.py` file. Can also be a hashtag associated with that value.
+    - 'all' to get posts across all values.
+    - The value you want to search for, as defined in your `options.py` file. Can also be a hashtag associated with that value.
 - `time` (optional) in the same format as above.
 
 ### Leaders
