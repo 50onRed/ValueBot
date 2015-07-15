@@ -40,5 +40,68 @@ class ValueBotTests(TestCase):
         db.session.remove()
         db.drop_all()
 
+    def test_help(self):
+        for cmd in ['valuebot help', 'valuebot man']:
+            post = SlackPost({
+                "trigger_word": "valuebot",
+                "text": cmd,
+                "user_name": "testadmin",
+                "timestamp": "11111111",
+                "channel_name": "#channel"
+            })
+
+            response = self.value_bot.handle_post(post)
+
+            self.assertIsInstance(response, SlackResponse)
+            self.assertTrue(len(response.messages) == 0)
+
+            self.assertIn('testvalue', response.text)
+            self.assertIn('#testvalue', response.text)
+
+    def test_help_only_with_valuebot(self):
+        for cmd in ['#testvalue help', '#testvalue man']:
+            post = SlackPost({
+                "trigger_word": "#testvalue",
+                "text": cmd,
+                "user_name": "testadmin",
+                "timestamp": "11111111",
+                "channel_name": "#channel"
+            })
+
+            response = self.value_bot.handle_post(post)
+
+            self.assertIsInstance(response, SlackResponse)
+            self.assertTrue(len(response.messages) == 0)
+
+            self.assertEqual('', response.text)
+
+    def test_call_out(self):
+        for attrs in [['valuebot #testvalue <@user>', 'valuebot'], ['#testvalue <@user>', '#testvalue']]:
+            num_posts = Post.query.count()
+
+            post = SlackPost({
+                "trigger_word": attrs[1],
+                "text": attrs[0],
+                "user_name": "testadmin",
+                "timestamp": "11111111",
+                "channel_name": "#channel"
+            })
+
+            response = self.value_bot.handle_post(post)
+
+            self.assertIsInstance(response, SlackResponse)
+            self.assertTrue(len(response.messages) == 0)
+
+            self.assertNotEqual('', response.text)
+            self.assertNotIn('Error', response.text)
+
+            self.assertEqual(Post.query.count(), num_posts + 1)
+
+            most_recent = Post.query.order_by(Post.id.desc()).first()
+            self.assertEqual(most_recent.user, "user")
+            self.assertEqual(most_recent.poster, "testadmin")
+            self.assertEqual(most_recent.value, "testvalue")
+            self.assertEqual(most_recent.slack_channel, "#channel")
+
 if __name__ == '__main__':
     unittest.main()
