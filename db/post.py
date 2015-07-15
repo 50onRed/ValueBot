@@ -9,7 +9,6 @@ class Post(db.Model):
     id = Column(Integer, primary_key=True)
     user = Column(String, nullable=False)
     poster = Column(String, nullable=False)
-    poster = Column(String, nullable=False)
     value = Column(String, nullable=False)
     text = Column(String, nullable=False)
     posted_at = Column(DateTime, nullable=False)
