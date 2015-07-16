@@ -10,7 +10,7 @@ class DummySlack(Slack):
     def __init__(self):
         return
 
-    def user_name_of_user_id(self, user_id):
+    def get_user_name(self, user_id):
         return user_id
 
     def send_message(self, message):
