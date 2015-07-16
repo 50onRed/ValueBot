@@ -1,5 +1,6 @@
 import json
 import datetime
+from slack import Slack, SlackPost, SlackMessage, SlackPreformattedMessage
 from value_bot import ValueBot
 from flask import Flask, request
 from flask.ext.script import Manager
@@ -17,23 +18,30 @@ def create_app():
     app.config.from_pyfile('./config.py')
 
     db.init_app(app)
-
     migrate = Migrate(app, db)
 
     @app.route('/', methods=['POST'])
     def post():
-        to_return = value_bot.handle_incoming_message(request.form)
+        post = SlackPost(request.form)
+        response = value_bot.handle_post(post)
 
-        return json.dumps(payload(to_return))
+        for msg in response.messages:
+            slack.send_message(msg)
+
+        return response.json_payload()
 
     return app
 
 app = create_app()
-value_bot = ValueBot(
-    admins=app.config["ADMINS"],
-    hashtags=app.config["HASHTAGS"],
+
+slack = Slack(
     webhook_url=app.config["WEBHOOK_URL"],
-    slack_token=app.config["SLACK_TOKEN"])
+    api_token=app.config["SLACK_TOKEN"])
+
+value_bot = ValueBot(
+    slack=slack,
+    admins=app.config["ADMINS"],
+    hashtags=app.config["HASHTAGS"])
 
 manager = Manager(app)
 manager.add_command('db', MigrateCommand)
@@ -47,13 +55,17 @@ def send_yesterday_leaders(channel):
         table = value_bot.get_leaders_table("all", yesterday.day, yesterday.month, yesterday.year)
 
         if table:
-            return value_bot.send_message(channel, "Yesterday's Leaders", table.get_string())
+            content = table.get_string()
         else:
-            return value_bot.send_message(channel, "Yesterday's Leaders", 'No leaders found')
+            content = "No leaders found"
+
+        message = SlackPreformattedMessage(channel, "Yesterday's leaders", content)
+        slack.send_message(message)
 
 @manager.command
 def send_callout_reminder(channel):
-    value_bot.send_message(channel, "Daily reminder to call out team members for embodying the core values today!", None)
+    message = SlackMessage(channel, "*Daily reminder to call out team members for embodying the core values today!*")
+    slack.send_message(message)
 
 @manager.command
 def trigger_list():

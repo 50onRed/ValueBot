@@ -1,7 +1,6 @@
 import re
 import datetime
-import requests
-import json
+from slack import SlackResponse, SlackPreformattedMessage
 from db.db import db
 from db.post import Post
 from prettytable import PrettyTable
@@ -10,33 +9,25 @@ MONTHS=["january", "february", "march", "april", "may", "june",
         "july", "august", "september", "october", "november", "december"]
 
 class ValueBot():
-    def __init__(self, admins, hashtags, webhook_url, slack_token):
+    def __init__(self, slack, admins, hashtags):
         self.admins = admins
+        self.slack = slack
         self.valuesDict = self._generate_values_dict(hashtags)
         self.values = hashtags.keys()
         self.hashtags = hashtags
-        self.webhook_url = webhook_url
-        self.slack_token = slack_token
-        self.username_cache = {}
 
-    def handle_incoming_message(self, msg):
-        trigger = msg["trigger_word"]
-        text = msg["text"]
-        poster = msg["user_name"]
-        timestamp = msg["timestamp"].replace(".", "")
-        channel = msg["channel_name"]
+    def handle_post(self, post):
+        if not post.trigger.startswith("#"):
+            regex = re.compile(post.trigger + ':*\s*(.*)')
+            post.text = regex.match(post.text).group(1) # only the text after the trigger command
 
-        if not trigger.startswith("#"):
-            regex = re.compile(trigger + ':*\s*(.*)')
-            text = regex.match(text).group(1) # only the text after the trigger command
-
-            if text.lower() in ["help", "man"]:
+            if post.text.lower() in ["help", "man"]:
                 return self._help_message()
 
-            if text.startswith("list"):
-                return self._generate_list(text, poster)
+            if post.text.startswith("list"):
+                return self._generate_list(post.text, post.poster)
 
-        return self._handle_call_out(trigger, text, poster, timestamp, channel)
+        return self._handle_call_out(post)
 
     def _help_message(self):
         to_return = "*ValueBot Usage*"
@@ -54,53 +45,40 @@ class ValueBot():
         to_return += "\n```valuebot Thanks @jane for being so #curious```"
         to_return += "\n```#supportive Thanks @mike for your help on that thing this morning!```"
 
-        return to_return
+        return SlackResponse(to_return)
 
-    def send_message(self, recipient, title, table_text=None):
-        text = "*{}*".format(title)
-
-        if table_text:
-            text += "\n```{}```".format(table_text)
-
-        payload = {
-            "channel": recipient,
-            "text": text
-        }
-        data = { "payload": json.dumps(payload) }
-        r = requests.post(self.webhook_url, data=data)
-
-        return "Message sent!"
-
-    def _handle_call_out(self, trigger, text, poster, timestamp, channel):
+    def _handle_call_out(self, post):
         value, user = None, None
 
-        if trigger in self.valuesDict: # message started with hashtag
-            value = self.valuesDict[trigger]
+        if post.trigger in self.valuesDict: # message started with hashtag
+            value = self.valuesDict[post.trigger]
         else: # bot triggered by name
-            hashtags = [tag.rstrip(".,!?:;") for tag in text.split() if tag.startswith("#")]
+            hashtags = [tag.rstrip(".,!?:;") for tag in post.text.split() if tag.startswith("#")]
             for tag in hashtags:
                 if tag in self.valuesDict:
                     value = self.valuesDict[tag]
                     break # only use the first hashtag that matches a value
 
-        mentioned_users = [name.strip("@.,!?:;<>") for name in text.split() if name.startswith("<@")]
+        mentioned_users = [name.strip("@.,!?:;<>") for name in post.text.split() if name.startswith("<@")]
         if len(mentioned_users) >= 1:
-            user = self._user_name_of_user_id(mentioned_users[0])
+            user = self.slack.get_user_name(mentioned_users[0])
 
             if user == None:
-                return "Error finding specified user."
+                return SlackResponse("Error finding specified user.")
 
         if not value or not user:
-            return ''
+            return SlackResponse()
 
-        post = Post(user, poster, value, text, timestamp, channel)
-        db.session.add(post)
+        post_obj = Post(user, post.poster, value, post.text, post.timestamp, post.channel)
+        db.session.add(post_obj)
 
         try:
             db.session.commit()
-            return "Thanks, @{0}! I've recorded your call out under `{1}`.".format(poster, value)
+            text = "Thanks, @{0}! I've recorded your call out under `{1}`.".format(post.poster, value)
         except:
-            return "There was an error saving your call out, sorry!"
+            text = "There was an error saving your call out, sorry!"
+
+        return SlackResponse(text)
 
     def _generate_list(self, text, poster):
         tokens = [token.rstrip(".,!?:;").lower() for token in text.split()]
@@ -109,7 +87,7 @@ class ValueBot():
         now = datetime.datetime.now()
 
         if length < 1:
-            return ''
+            return SlackResponse()
 
         leaders, user, value, date, month, year = False, None, None, None, None, None
 
@@ -129,7 +107,7 @@ class ValueBot():
             subject = tokens[0]
 
         if not poster in self.admins and subject != "me":
-            return "Admin-only!"
+            return SlackResponse("Admin-only!")
 
         if subject == "me" and not leaders:
             user = poster
@@ -159,7 +137,7 @@ class ValueBot():
                     try:
                         year = int(year_token)
                     except ValueError:
-                        return "Invalid year '{}'".format(year_token)
+                        return SlackResponse("Invalid year '{}'".format(year_token))
                 else:
                     year = now.year
 
@@ -174,9 +152,12 @@ class ValueBot():
             title = "Leaders in {}{}".format(value, date_clause(date, month, year))
 
             if table:
-                return self.send_message(poster_username, title, table.get_string())
+                content = table.get_string()
             else:
-                return self.send_message(poster_username, title, 'No leaders found')
+                content = "No leaders found"
+
+            message = SlackPreformattedMessage(poster_username, title, content)
+            return SlackResponse("Message sent!", [message])
         else:
             posts = None
 
@@ -195,11 +176,14 @@ class ValueBot():
 
                 for post in posts:
                     table.add_row([post.user, post.poster, post.value, post.message_info_for_table, post.posted_at_formatted])
-                return self.send_message(poster_username, title, table.get_string())
+                content = table.get_string()
             else:
-                return self.send_message(poster_username, title, 'No posts found!')
+                content = "No posts found"
 
-        return ''
+            message = SlackPreformattedMessage(poster_username, title, content)
+            return SlackResponse("Message sent!", [message])
+
+        return SlackResponse()
 
     def get_leaders_table(self, value, date, month, year):
         leaders = Post.leaders_by_value(value, date, month, year).all()
@@ -223,28 +207,6 @@ class ValueBot():
                 valuesDict[hashtag] = value
 
         return valuesDict
-
-    def _user_name_of_user_id(self, user_id):
-        if user_id in self.username_cache:
-            return self.username_cache[user_id]
-
-        data = {
-            "token": self.slack_token,
-            "user": user_id
-        }
-        r = requests.post("https://slack.com/api/users.info", data=data)
-        
-        if r.status_code == 200:
-            try:
-                response_data = r.json()
-                user_name = response_data["user"]["name"]
-                self.username_cache[user_id] = user_name
-
-                return user_name
-            except ValueError:
-                return None
-        else:
-            return None
 
 def new_left_aligned_table(attrs):
     t = PrettyTable(attrs)
