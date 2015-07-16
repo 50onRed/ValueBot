@@ -7,7 +7,7 @@ class Slack(object):
         self.api_token = api_token
         self.username_cache = {}
 
-    def user_name_of_user_id(self, user_id):
+    def get_user_name(self, user_id):
         if user_id in self.username_cache:
             return self.username_cache[user_id]
 
@@ -17,15 +17,16 @@ class Slack(object):
         }
         r = requests.post("https://slack.com/api/users.info", data=data)
         
-        if r.status_code == 200:
-            try:
-                response_data = r.json()
-                user_name = response_data["user"]["name"]
-                self.username_cache[user_id] = user_name
+        r.raise_for_status()
 
-                return user_name
-            except ValueError:
-                return None
+        try:
+            response_data = r.json()
+            user_name = response_data["user"]["name"]
+            self.username_cache[user_id] = user_name
+
+            return user_name
+        except ValueError:
+            return None
         else:
             return None
 

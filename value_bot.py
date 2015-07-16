@@ -61,7 +61,7 @@ class ValueBot():
 
         mentioned_users = [name.strip("@.,!?:;<>") for name in post.text.split() if name.startswith("<@")]
         if len(mentioned_users) >= 1:
-            user = self.slack.user_name_of_user_id(mentioned_users[0])
+            user = self.slack.get_user_name(mentioned_users[0])
 
             if user == None:
                 return SlackResponse("Error finding specified user.")

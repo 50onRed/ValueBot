@@ -23,12 +23,12 @@ def create_app():
     @app.route('/', methods=['POST'])
     def post():
         post = SlackPost(request.form)
-        to_return = value_bot.handle_post(post)
+        response = value_bot.handle_post(post)
 
-        for msg in to_return.messages:
+        for msg in response.messages:
             slack.send_message(msg)
 
-        return to_return.json_payload()
+        return response.json_payload()
 
     return app
 
