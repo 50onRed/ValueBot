@@ -1,9 +1,9 @@
 import datetime
 from sqlalchemy import Column, Integer, String, DateTime, func, desc
 from calendar import monthrange
-from .db import db
+from .db import db, Base
 
-class Post(db.Model):
+class Post(Base):
     __tablename__ = 'posts'
 
     id = Column(Integer, primary_key=True)

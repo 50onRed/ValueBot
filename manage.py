@@ -1,50 +1,29 @@
-import json
 import datetime
+import config
 from slack import Slack, SlackPost, SlackMessage, SlackPreformattedMessage
 from value_bot import ValueBot
-from flask import Flask, request
-from flask.ext.script import Manager
-from flask.ext.migrate import Migrate, MigrateCommand
+from manager import Manager
+# from flask.ext.migrate import Migrate, MigrateCommand
 from db.db import db
 
-def payload(text):
-    return {
-        "text": text,
-        'link_names': 1
-    }
-
-def create_app():
-    app = Flask(__name__)
-    app.config.from_pyfile('./config.py')
-
-    db.init_app(app)
-    migrate = Migrate(app, db)
-
-    @app.route('/', methods=['POST'])
-    def post():
-        post = SlackPost(request.form)
-        response = value_bot.handle_post(post)
-
-        for msg in response.messages:
-            slack.send_message(msg)
-
-        return response.json_payload()
-
-    return app
-
-app = create_app()
-
-slack = Slack(
-    webhook_url=app.config["WEBHOOK_URL"],
-    api_token=app.config["SLACK_TOKEN"])
+slack = Slack(config.SLACK_BOT_TOKEN)
 
 value_bot = ValueBot(
     slack=slack,
-    admins=app.config["ADMINS"],
-    hashtags=app.config["HASHTAGS"])
+    admins=config.ADMINS,
+    hashtags=config.HASHTAGS)
 
-manager = Manager(app)
-manager.add_command('db', MigrateCommand)
+manager = Manager()
+
+@manager.command
+def run():
+    def handle_post(post):
+        response = value_bot.handle_post(post)
+        # do something with the output
+
+    slack.start({
+        "post": handle_post
+    })
 
 @manager.command
 def send_yesterday_leaders(channel):
@@ -79,4 +58,4 @@ def trigger_list():
     print ','.join(triggers)
 
 if __name__ == "__main__":
-    manager.run()
+    manager.main()

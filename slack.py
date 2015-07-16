@@ -1,11 +1,55 @@
+import websocket
 import requests
 import json
 
 class Slack(object):
-    def __init__(self, webhook_url, api_token):
-        self.webhook_url = webhook_url
+    def __init__(self, api_token):
         self.api_token = api_token
         self.username_cache = {}
+
+    def start(self, handlers):
+        self.handlers = handlers
+        websocket.enableTrace(True)
+
+        data = {
+            "token": self.api_token
+        }
+        r = requests.post("https://slack.com/api/rtm.start", data=data)
+        r.raise_for_status()
+
+        try:
+            response_data = r.json()
+            print response_data
+            print response_data["url"]
+
+            ws = websocket.WebSocketApp(response_data["url"],
+                                        on_message = self._on_message,
+                                        on_error = self._on_error,
+                                        on_close = self._on_close)
+            ws.run_forever()
+        except ValueError:
+            print "lmaoerror"
+
+    def _on_message(self, ws, message):
+        print message
+        message = json.loads(message)
+
+        is_deleted = "subtype" in message and message["subtype"] == "message_deleted"
+        if message["type"] == "message" and not is_deleted:
+            post = SlackPost(
+                text=message["text"],
+                poster=message["user"],
+                timestamp=message["ts"],
+                channel=message["channel"])
+
+            if "post" in self.handlers:
+                self.handlers["post"](post)
+
+    def _on_error(self, ws, error):
+        print error
+
+    def _on_close(self, ws):
+        print "### WebSocket connection closed ###"
 
     def get_user_name(self, user_id):
         if user_id in self.username_cache:
@@ -63,9 +107,8 @@ class SlackPreformattedMessage(SlackMessage):
         super(SlackPreformattedMessage, self).__init__(recipient, text)
 
 class SlackPost(object):
-    def __init__(self, msg_data):
-        self.trigger = msg_data["trigger_word"]
-        self.text = msg_data["text"]
-        self.poster = msg_data["user_name"]
-        self.timestamp = msg_data["timestamp"].replace(".", "")
-        self.channel = msg_data["channel_name"]
+    def __init__(self, text, poster, timestamp, channel):
+        self.text = text
+        self.poster = poster
+        self.timestamp = timestamp
+        self.channel = channel
