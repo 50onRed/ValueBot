@@ -48,6 +48,9 @@ class SlackResponse(object):
             'link_names': 1
         })
 
+    def is_empty(self):
+        return self.text == "" and len(self.messages) == 0
+
 class SlackMessage(object):
     def __init__(self, recipient, text):
         self.recipient = recipient
