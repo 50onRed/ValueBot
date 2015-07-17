@@ -3,8 +3,8 @@ import config
 from slack import Slack, SlackPost, SlackMessage, SlackPreformattedMessage
 from value_bot import ValueBot
 from manager import Manager
-# from flask.ext.migrate import Migrate, MigrateCommand
-from db.db import db
+from contextlib import contextmanager
+from db import session_scope
 
 slack = Slack(config.SLACK_BOT_TOKEN)
 
@@ -18,8 +18,11 @@ manager = Manager()
 @manager.command
 def run():
     def handle_post(post):
-        response = value_bot.handle_post(post)
-        # do something with the output
+        with session_scope() as session:
+            responses = value_bot.handle_post(post, session)
+
+        for res in responses:
+            res.send(slack)
 
     slack.start({
         "post": handle_post
@@ -30,16 +33,16 @@ def send_yesterday_leaders(channel):
     now = datetime.datetime.now()
     yesterday = now - datetime.timedelta(days=1)
 
-    with app.app_context():
-        table = value_bot.get_leaders_table("all", yesterday.day, yesterday.month, yesterday.year)
+    with session_scope() as session:
+        table = value_bot.get_leaders_table(session, "all", yesterday.day, yesterday.month, yesterday.year)
 
-        if table:
-            content = table.get_string()
-        else:
-            content = "No leaders found"
+    if table:
+        content = table.get_string()
+    else:
+        content = "No leaders found"
 
-        message = SlackPreformattedMessage(channel, "Yesterday's leaders", content)
-        slack.send_message(message)
+    message = SlackPreformattedMessage(channel, "Yesterday's leaders", content)
+    slack.send_message(message)
 
 @manager.command
 def send_callout_reminder(channel):
@@ -48,7 +51,7 @@ def send_callout_reminder(channel):
 
 @manager.command
 def trigger_list():
-    hashtags = app.config["HASHTAGS"]
+    hashtags = config.HASHTAGS
     triggers = {"valuebot"}
 
     for value in hashtags:

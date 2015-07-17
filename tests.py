@@ -16,6 +16,9 @@ class DummySlack(Slack):
     def send_message(self, message):
         print "Sending message: {}".format(message)
 
+    def private_message_channel(user_id):
+        return "D{}".format(user_id)
+
 class ValueBotTests(TestCase):
     SQLALCHEMY_DATABASE_URI = "sqlite://"
     TESTING = True

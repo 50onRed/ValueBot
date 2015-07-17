@@ -1,7 +1,7 @@
 import datetime
 from sqlalchemy import Column, Integer, String, DateTime, func, desc
 from calendar import monthrange
-from .db import db, Base
+from . import Base
 
 class Post(Base):
     __tablename__ = 'posts'
@@ -37,8 +37,8 @@ class Post(Base):
         return self.posted_at.strftime('%B %d %Y %I:%M %p')
 
     @classmethod
-    def posts_by_user(cls, user, date, month, year):
-        query = cls.query.filter(Post.user == user)
+    def posts_by_user(cls, session, user, date, month, year):
+        query = session.query(cls).filter(Post.user == user)
 
         if date or month:
             dates = _get_date_range(date, month, year)
@@ -47,8 +47,8 @@ class Post(Base):
         return query
 
     @classmethod
-    def posts_by_value(cls, value, date, month, year):
-        query = cls.query
+    def posts_by_value(cls, session, value, date, month, year):
+        query = session.query(cls)
 
         if (value and value != "all"):
             query = query.filter(Post.value == value)
@@ -60,8 +60,8 @@ class Post(Base):
         return query
 
     @classmethod
-    def leaders_by_value(cls, value, date, month, year):
-        query = db.session.query(Post.user, func.count(Post.id).label('user_occurence')
+    def leaders_by_value(cls, session, value, date, month, year):
+        query = session.query(Post.user, func.count(Post.id).label('user_occurence')
             ).group_by(Post.user
             ).order_by(desc('user_occurence'))
 
