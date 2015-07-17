@@ -69,10 +69,7 @@ class ValueBot():
         post_obj = Post(user, poster_username, value, post.text, post.timestamp, post.channel)
         session.add(post_obj)
 
-        poster_username = self.slack.get_user_name(post.poster)
-        text = "Thanks, @{0}! I've recorded your call out under `{1}`.".format(poster_username, value)
-
-        return post.respond(text)
+        return post.react("white_check_mark")
 
     def _generate_list(self, post, session):
         tokens = [token.rstrip(".,!?:;").lower() for token in post.text.split()]
@@ -101,7 +98,7 @@ class ValueBot():
             subject = tokens[0]
 
         if not self.is_admin(post.poster) and subject != "me":
-            return post.respond("Admin-only!")
+            return post.react("x")
 
         if subject == "me" and not leaders:
             user = post.poster
@@ -138,6 +135,8 @@ class ValueBot():
                     if now.month < date:
                         year -= 1
 
+        reaction = post.react("soon")
+
         if leaders and value:
             table = self.get_leaders_table(value, date, month, year)
 
@@ -149,8 +148,7 @@ class ValueBot():
                 content = "No leaders found"
 
             message = SlackPreformattedMessage(post.poster, title, content)
-            res = post.respond("Message sent!")
-            return [res, message]
+            return [reaction, message]
         else:
             posts = None
 
@@ -174,8 +172,7 @@ class ValueBot():
                 content = "No posts found"
 
             message = SlackPreformattedMessage(post.poster, title, content)
-            res = post.respond("Message sent!")
-            return [res, message]
+            return [reaction, message]
 
         return SlackResponse()
 

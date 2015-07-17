@@ -26,7 +26,8 @@ class Post(Base):
 
     @property
     def post_url(self):
-        return "https://50onred.slack.com/archives/{}/p{}".format(self.slack_channel, self.slack_timestamp)
+        ts = self.slack_channel.replace(".", "")
+        return "https://50onred.slack.com/archives/{}/p{}".format(self.slack_channel, ts)
 
     @property
     def message_info_for_table(self):

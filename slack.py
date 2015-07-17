@@ -105,6 +105,22 @@ class SlackPreformattedMessage(SlackMessage):
         text = "*{}*\n```{}```".format(title, content)
         super(SlackPreformattedMessage, self).__init__(channel, text)
 
+class SlackReaction(SlackResponse):
+    def __init__(self, channel, timestamp, name):
+        self.channel = channel
+        self.timestamp = timestamp
+        self.name = name
+
+    def send(self, slack):
+        payload = {
+            "channel": self.channel,
+            "timestamp": self.timestamp,
+            "name": self.name
+        }
+
+        res = slack.make_api_request("reactions.add", payload)
+        print res
+
 class SlackPost(object):
     def __init__(self, text, poster, timestamp, channel):
         self.text = text
@@ -116,4 +132,11 @@ class SlackPost(object):
         return SlackMessage(
             channel=self.channel,
             text=text
+        )
+
+    def react(self, emoji):
+        return SlackReaction(
+            channel=self.channel,
+            timestamp=self.timestamp,
+            name=emoji
         )
