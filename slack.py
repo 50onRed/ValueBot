@@ -65,6 +65,9 @@ class Slack(object):
         return self.username_cache[user_id]
 
     def get_channel_name(self, channel_id):
+        if channel_id in self.channel_cache.values(): # old-style channels in database
+            return channel_id
+
         if channel_id not in self.channel_cache:
             channel_info = self.make_api_request("channels.info", { "channel": channel_id })
 
