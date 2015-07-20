@@ -22,6 +22,9 @@ class ValueBot():
         else:
             response = self._handle_call_out(post, session)
 
+        if not response:
+            response = []
+
         if not isinstance(response, list):
             response = [response]
 
@@ -62,7 +65,7 @@ class ValueBot():
                 return post.respond("Error finding specified user.")
 
         if not value or not user:
-            return SlackResponse()
+            return None
 
         poster_username = self.slack.get_user_name(post.poster)
 
@@ -82,7 +85,7 @@ class ValueBot():
         now = datetime.datetime.now()
 
         if length < 1:
-            return SlackResponse()
+            return None
 
         leaders, user, value, date, month, year = False, None, None, None, None, None
 
@@ -181,7 +184,7 @@ class ValueBot():
             message = SlackPreformattedMessage(post.poster, title, content)
             return [reaction, message]
 
-        return SlackResponse()
+        return None
 
     def get_leaders_table(self, session, value, date, month, year):
         leaders = Post.leaders_by_value(session, value, date, month, year).all()
