@@ -1,9 +1,11 @@
 import datetime
 from sqlalchemy import Column, Integer, String, DateTime, func, desc
 from calendar import monthrange
-from .db import db
+from . import Base
 
-class Post(db.Model):
+MAX_LINE_LENGTH = 65
+
+class Post(Base):
     __tablename__ = 'posts'
 
     id = Column(Integer, primary_key=True)
@@ -24,21 +26,54 @@ class Post(db.Model):
         self.slack_timestamp = slack_timestamp
         self.slack_channel = slack_channel
 
-    @property
-    def post_url(self):
-        return "https://50onred.slack.com/archives/{}/p{}".format(self.slack_channel, self.slack_timestamp)
+    def post_url(self, slack):
+        channel = slack.get_channel_name(self.slack_channel)
+
+        if channel:
+            ts = self.slack_timestamp.replace(".", "")
+            return "https://50onred.slack.com/archives/{}/p{}".format(channel, ts)
+        else:
+            return "(Private message)"
 
     @property
-    def message_info_for_table(self):
-        return "{}\n{}".format(self.text, self.post_url)
+    def users_value_info_for_table(self):
+        return "@{} -> @{} for `{}`".format(self.poster, self.user, self.value)
+
+    def message_info_for_table(self, slack):
+        text_tokens = self.text.split()
+
+        lines = []
+        curr_line = []
+        curr_line_length = 0
+
+        for token in text_tokens:
+            if token.startswith("<@") and token.endswith(">"):
+                user_id = token.strip("@<>")
+                user_name = slack.get_user_name(user_id)
+                token = "@{}".format(user_name)
+
+            curr_line_length += 1 + len(token)
+
+            if curr_line_length > MAX_LINE_LENGTH:
+                line = " ".join(curr_line)
+                lines.append(line)
+                curr_line = [token]
+                curr_line_length = 0
+            else:
+                curr_line.append(token)
+
+        lines.append(" ".join(curr_line))
+
+        text = "\n".join(lines)
+        return "{}\n{}".format(text, self.post_url(slack))
 
     @property
     def posted_at_formatted(self):
         return self.posted_at.strftime('%B %d %Y %I:%M %p')
 
     @classmethod
-    def posts_by_user(cls, user, date, month, year):
-        query = cls.query.filter(Post.user == user)
+    def posts_by_user(cls, session, user, date, month, year):
+        query = session.query(cls).filter(Post.user == user)
 
         if date or month:
             dates = _get_date_range(date, month, year)
@@ -47,8 +82,8 @@ class Post(db.Model):
         return query
 
     @classmethod
-    def posts_by_value(cls, value, date, month, year):
-        query = cls.query
+    def posts_by_value(cls, session, value, date, month, year):
+        query = session.query(cls)
 
         if (value and value != "all"):
             query = query.filter(Post.value == value)
@@ -60,8 +95,8 @@ class Post(db.Model):
         return query
 
     @classmethod
-    def leaders_by_value(cls, value, date, month, year):
-        query = db.session.query(Post.user, func.count(Post.id).label('user_occurence')
+    def leaders_by_value(cls, session, value, date, month, year):
+        query = session.query(Post.user, func.count(Post.id).label('user_occurence')
             ).group_by(Post.user
             ).order_by(desc('user_occurence'))
 

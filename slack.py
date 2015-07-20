@@ -1,71 +1,161 @@
+import websocket
 import requests
 import json
 
 class Slack(object):
-    def __init__(self, webhook_url, api_token):
-        self.webhook_url = webhook_url
+    def __init__(self, api_token):
         self.api_token = api_token
         self.username_cache = {}
+        self.channel_cache = {}
+
+    def start(self, handlers):
+        self.handlers = handlers
+        websocket.enableTrace(True)
+
+        response = self.make_api_request("rtm.start")
+        self.bot_user_id = response["self"]["id"]
+
+        for user in response["users"]:
+            self.username_cache[user["id"]] = user["name"]
+
+        for channel in response["channels"]:
+            self.channel_cache[channel["id"]] = channel["name"]
+
+        ws = websocket.WebSocketApp(response["url"],
+                                    on_message = self._on_message,
+                                    on_error = self._on_error,
+                                    on_close = self._on_close)
+        ws.run_forever()
+
+    def _on_message(self, ws, message):
+        print message
+        message = json.loads(message)
+
+        is_deleted = "subtype" in message and message["subtype"] == "message_deleted"
+        is_message_confirmation = "ok" in message and message["ok"] == True
+        is_real_user = "user" in message
+        is_self = "user" in message and message["user"] == self.bot_user_id
+        if (message["type"] == "message"
+            and not is_deleted
+            and not is_message_confirmation
+            and is_real_user
+            and not is_self):
+            post = SlackPost(
+                text=message["text"],
+                poster=message["user"],
+                timestamp=message["ts"],
+                channel=message["channel"])
+
+            if "post" in self.handlers:
+                self.handlers["post"](post)
+
+    def _on_error(self, ws, error):
+        print error
+
+    def _on_close(self, ws):
+        print "### WebSocket connection closed ###"
 
     def get_user_name(self, user_id):
-        if user_id in self.username_cache:
-            return self.username_cache[user_id]
+        if user_id not in self.username_cache:
+            user_info = self.make_api_request("users.info", { "user": user_id })
 
-        data = {
-            "token": self.api_token,
-            "user": user_id
-        }
-        r = requests.post("https://slack.com/api/users.info", data=data)
-        
+            user_name = user_info["user"]["name"]
+            self.username_cache[user_id] = user_name
+
+        return self.username_cache[user_id]
+
+    def get_channel_name(self, channel_id):
+        if channel_id not in self.channel_cache:
+            channel_info = self.make_api_request("channels.info", { "channel": channel_id })
+
+            if channel_info["ok"]:
+                channel_name = channel_info["channel"]["name"]
+            else:
+                channel_name = None # private message or something
+
+            self.channel_cache[channel_id] = channel_name
+
+        return self.channel_cache[channel_id]
+
+    def private_message_channel(self, user_id):
+        response = self.make_api_request("im.open", { "user": user_id })
+
+        return response["channel"]["id"]
+
+    def make_api_request(self, method, data={}):
+        data["token"] = self.api_token
+
+        r = requests.post("https://slack.com/api/{}".format(method), data=data)
         r.raise_for_status()
 
         try:
             response_data = r.json()
-            user_name = response_data["user"]["name"]
-            self.username_cache[user_id] = user_name
-
-            return user_name
+            return response_data
         except ValueError:
             return None
-        else:
-            return None
-
-    def send_message(self, message):
-        payload = {
-            "channel": message.recipient,
-            "text": message.text
-        }
-        data = { "payload": json.dumps(payload) }
-        r = requests.post(self.webhook_url, data=data)
 
 class SlackResponse(object):
-    def __init__(self, text="", messages=[]):
-        self.text = text
-        self.messages = messages
+    def send(self, slack):
+        pass
 
-    def json_payload(self):
-        return json.dumps({
+class SlackMessage(SlackResponse):
+    def __init__(self, channel, text):
+        self.channel = channel
+        self.text = text
+
+    def send(self, slack):
+        if self.channel.startswith("U"):
+            channel = slack.private_message_channel(self.channel)
+        else:
+            channel = self.channel
+
+        payload = {
+            "channel": channel,
             "text": self.text,
-            'link_names': 1
-        })
+            'link_names': 1,
+            "as_user": True
+        }
 
-    def is_empty(self):
-        return self.text == "" and len(self.messages) == 0
-
-class SlackMessage(object):
-    def __init__(self, recipient, text):
-        self.recipient = recipient
-        self.text = text
+        res = slack.make_api_request("chat.postMessage", payload)
+        print res
 
 class SlackPreformattedMessage(SlackMessage):
-    def __init__(self, recipient, title, content):
+    def __init__(self, channel, title, content):
         text = "*{}*\n```{}```".format(title, content)
-        super(SlackPreformattedMessage, self).__init__(recipient, text)
+        super(SlackPreformattedMessage, self).__init__(channel, text)
+
+class SlackReaction(SlackResponse):
+    def __init__(self, channel, timestamp, name):
+        self.channel = channel
+        self.timestamp = timestamp
+        self.name = name
+
+    def send(self, slack):
+        payload = {
+            "channel": self.channel,
+            "timestamp": self.timestamp,
+            "name": self.name
+        }
+
+        res = slack.make_api_request("reactions.add", payload)
+        print res
 
 class SlackPost(object):
-    def __init__(self, msg_data):
-        self.trigger = msg_data["trigger_word"]
-        self.text = msg_data["text"]
-        self.poster = msg_data["user_name"]
-        self.timestamp = msg_data["timestamp"].replace(".", "")
-        self.channel = msg_data["channel_name"]
+    def __init__(self, text, poster, timestamp, channel):
+        self.text = text
+        self.poster = poster
+        self.timestamp = timestamp
+        self.channel = channel
+
+    def respond(self, text):
+        return SlackMessage(
+            channel=self.channel,
+            text=text
+        )
+
+    def react(self, emoji):
+        return SlackReaction(
+            channel=self.channel,
+            timestamp=self.timestamp,
+            name=emoji
+        )

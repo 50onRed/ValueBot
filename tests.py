@@ -1,9 +1,9 @@
 import unittest
-from flask.ext.testing import TestCase
-from app import create_app
-from slack import Slack, SlackResponse, SlackMessage, SlackPost
+from slack import Slack, SlackResponse, SlackMessage, SlackReaction, SlackPost
 from value_bot import ValueBot
-from db.db import db
+from db import Base
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from db.post import Post
 
 class DummySlack(Slack):
@@ -13,18 +13,19 @@ class DummySlack(Slack):
     def get_user_name(self, user_id):
         return user_id
 
-    def send_message(self, message):
-        print "Sending message: {}".format(message)
+    def get_channel_name(self, channel_id):
+        return channel_id
 
-class ValueBotTests(TestCase):
-    SQLALCHEMY_DATABASE_URI = "sqlite://"
-    TESTING = True
+    def private_message_channel(user_id):
+        return "D{}".format(user_id)
 
-    def create_app(self):
-        return create_app()
-
+class ValueBotTests(unittest.TestCase):
     def setUp(self):
-        db.create_all()
+        engine = create_engine("sqlite://")
+        Session = sessionmaker(bind=engine)
+        Base.metadata.create_all(engine)
+
+        self.session = Session()
 
         slack = DummySlack()
 
@@ -37,8 +38,7 @@ class ValueBotTests(TestCase):
         )
 
     def tearDown(self):
-        db.session.remove()
-        db.drop_all()
+        self.session.close()
 
     def test_valid_syntax(self):
         valids = [
@@ -59,21 +59,22 @@ class ValueBotTests(TestCase):
             'valuebot list someone july',
             'valuebot list someone july 2014',
             '#testvalue <@someone> yes!'
+            'whatever #testvalue <@someone> wahoooo',
+            'some other thing for <@someone> #testvalue'
         ]
 
         for cmd in valids:
-            post = SlackPost({
-                "trigger_word": cmd.split()[0],
-                "text": cmd,
-                "user_name": "testadmin",
-                "timestamp": "11111111",
-                "channel_name": "#channel"
-            })
+            post = SlackPost(
+                text=cmd,
+                poster="testadmin",
+                timestamp="11111111",
+                channel="#channel"
+            )
 
-            response = self.value_bot.handle_post(post)
+            response = self.value_bot.handle_post(post, self.session)
 
-            self.assertIsInstance(response, SlackResponse)
-            self.assertFalse(response.is_empty(), cmd)
+            self.assertIsInstance(response, list)
+            self.assertTrue(len(response) > 0, cmd)
 
     def test_invalid_syntax(self):
         invalids = [
@@ -86,77 +87,56 @@ class ValueBotTests(TestCase):
         ]
 
         for cmd in invalids:
-            post = SlackPost({
-                "trigger_word": cmd.split()[0],
-                "text": cmd,
-                "user_name": "testadmin",
-                "timestamp": "11111111",
-                "channel_name": "#channel"
-            })
+            post = SlackPost(
+                text=cmd,
+                poster="testadmin",
+                timestamp="11111111",
+                channel="#channel"
+            )
 
-            response = self.value_bot.handle_post(post)
+            response = self.value_bot.handle_post(post, self.session)
 
-            self.assertIsInstance(response, SlackResponse)
-            self.assertTrue(response.is_empty(), cmd)
+            self.assertIsInstance(response, list)
+            self.assertTrue(len(response) == 0, cmd)
 
     def test_help(self):
         for cmd in ['valuebot help', 'valuebot man']:
-            post = SlackPost({
-                "trigger_word": "valuebot",
-                "text": cmd,
-                "user_name": "testadmin",
-                "timestamp": "11111111",
-                "channel_name": "#channel"
-            })
+            post = SlackPost(
+                text=cmd,
+                poster="testadmin",
+                timestamp="11111111",
+                channel="#channel"
+            )
 
-            response = self.value_bot.handle_post(post)
+            response = self.value_bot.handle_post(post, self.session)
 
-            self.assertIsInstance(response, SlackResponse)
-            self.assertTrue(len(response.messages) == 0)
+            self.assertIsInstance(response, list)
+            self.assertTrue(len(response) == 1)
+            self.assertIsInstance(response[0], SlackMessage)
 
-            self.assertIn('testvalue', response.text)
-            self.assertIn('#testvalue', response.text)
-
-    def test_help_only_with_valuebot(self):
-        for cmd in ['#testvalue help', '#testvalue man']:
-            post = SlackPost({
-                "trigger_word": "#testvalue",
-                "text": cmd,
-                "user_name": "testadmin",
-                "timestamp": "11111111",
-                "channel_name": "#channel"
-            })
-
-            response = self.value_bot.handle_post(post)
-
-            self.assertIsInstance(response, SlackResponse)
-            self.assertTrue(len(response.messages) == 0)
-
-            self.assertEqual('', response.text)
+            self.assertIn('testvalue', response[0].text)
+            self.assertIn('#testvalue', response[0].text)
 
     def test_call_out(self):
         for cmd in ['valuebot #testvalue <@user>', '#testvalue <@user>']:
-            num_posts = Post.query.count()
+            num_posts = self.session.query(Post).count()
 
-            post = SlackPost({
-                "trigger_word": cmd.split()[0],
-                "text": cmd,
-                "user_name": "testadmin",
-                "timestamp": "11111111",
-                "channel_name": "#channel"
-            })
+            post = SlackPost(
+                text=cmd,
+                poster="testadmin",
+                timestamp="11111111",
+                channel="#channel"
+            )
 
-            response = self.value_bot.handle_post(post)
+            response = self.value_bot.handle_post(post, self.session)
 
-            self.assertIsInstance(response, SlackResponse)
-            self.assertTrue(len(response.messages) == 0)
+            self.assertIsInstance(response, list)
+            self.assertTrue(len(response) == 1)
+            self.assertIsInstance(response[0], SlackReaction)
 
-            self.assertNotEqual('', response.text)
-            self.assertNotIn('Error', response.text)
+            self.assertEqual(self.session.query(Post).count(), num_posts + 1)
 
-            self.assertEqual(Post.query.count(), num_posts + 1)
-
-            most_recent = Post.query.order_by(Post.id.desc()).first()
+            most_recent = self.session.query(Post).order_by(Post.id.desc()).first()
             self.assertEqual(most_recent.user, "user")
             self.assertEqual(most_recent.poster, "testadmin")
             self.assertEqual(most_recent.value, "testvalue")
