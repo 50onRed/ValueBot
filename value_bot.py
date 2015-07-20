@@ -145,7 +145,7 @@ class ValueBot():
         reaction = post.react("ok_hand")
 
         if leaders and value:
-            table = self.get_leaders_table(value, date, month, year)
+            table = self.get_leaders_table(session, value, date, month, year)
 
             title = "Leaders in {}{}".format(value, date_clause(date, month, year))
 

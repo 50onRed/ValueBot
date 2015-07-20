@@ -58,6 +58,14 @@ class ValueBotTests(unittest.TestCase):
             'valuebot list someone today',
             'valuebot list someone july',
             'valuebot list someone july 2014',
+            'valuebot list leaders all',
+            'valuebot list leaders all today',
+            'valuebot list leaders all july',
+            'valuebot list leaders all july 2014',
+            'valuebot list leaders testvalue',
+            'valuebot list leaders testvalue today',
+            'valuebot list leaders testvalue july',
+            'valuebot list leaders testvalue july 2014',
             '#testvalue <@someone> yes!'
             'whatever #testvalue <@someone> wahoooo',
             'some other thing for <@someone> #testvalue'
