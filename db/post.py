@@ -40,17 +40,18 @@ class Post(Base):
         return "@{} -> @{} for `{}`".format(self.poster, self.user, self.value)
 
     def message_info_for_table(self, slack):
-        text_tokens = self.text.split()
+        text_tokens = self.text.encode("ascii", "replace").split()
 
         lines = []
         curr_line = []
         curr_line_length = 0
 
         for token in text_tokens:
-            if token.startswith("<@") and token.endswith(">"):
-                user_id = token.strip("@<>")
+            if token.startswith("<@"):
+                last_chars = token[12:0]
+                user_id = token[:12].strip("@<>")
                 user_name = slack.get_user_name(user_id)
-                token = "@{}".format(user_name)
+                token = "@{}{}".format(user_name, last_chars)
 
             curr_line_length += 1 + len(token)
 
