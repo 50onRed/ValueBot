@@ -1,7 +1,7 @@
 import datetime
 from slack import SlackResponse, SlackPreformattedMessage
 from db.post import Post
-from prettytable import PrettyTable
+from prettytable import PrettyTable, ALL, NONE
 
 MONTHS=["january", "february", "march", "april", "may", "june",
         "july", "august", "september", "october", "november", "december"]
@@ -73,6 +73,10 @@ class ValueBot():
 
     def _generate_list(self, post, session):
         tokens = [token.rstrip(".,!?:;").lower() for token in post.text.split()]
+
+        if (tokens[0].startswith("valuebot")):
+            del(tokens[0])
+
         del(tokens[0]) # get rid of 'list' token
         length = len(tokens)
         now = datetime.datetime.now()
@@ -135,7 +139,7 @@ class ValueBot():
                     if now.month < date:
                         year -= 1
 
-        reaction = post.react("soon")
+        reaction = post.react("ok_hand")
 
         if leaders and value:
             table = self.get_leaders_table(value, date, month, year)
@@ -163,10 +167,13 @@ class ValueBot():
             title += date_clause(date, month, year)
 
             if posts:
-                table = new_left_aligned_table(["User", "Poster", "Value", "Message", "Posted"])
+                table = new_left_aligned_table(["Info", "Message", "Date"])
 
                 for p in posts:
-                    table.add_row([p.user, p.poster, p.value, p.message_info_for_table, p.posted_at_formatted])
+                    table.add_row([
+                        p.users_value_info_for_table,
+                        p.message_info_for_table(self.slack),
+                        p.posted_at_formatted])
                 content = table.get_string()
             else:
                 content = "No posts found"
@@ -205,8 +212,14 @@ class ValueBot():
 
 def new_left_aligned_table(attrs):
     t = PrettyTable(attrs)
-    for a in attrs:
-        t.align[a] = "l"
+    t.hrules = ALL
+    t.horizontal_char = " "
+    t.vrules = NONE
+    t.header_style = "upper"
+    t.align = "l"
+    t.padding_width = 1
+    t.left_padding_width = 0
+    t.right_padding_width = 0
     return t
 
 def date_clause(date, month, year):

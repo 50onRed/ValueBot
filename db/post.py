@@ -3,6 +3,8 @@ from sqlalchemy import Column, Integer, String, DateTime, func, desc
 from calendar import monthrange
 from . import Base
 
+MAX_LINE_LENGTH = 65
+
 class Post(Base):
     __tablename__ = 'posts'
 
@@ -24,14 +26,46 @@ class Post(Base):
         self.slack_timestamp = slack_timestamp
         self.slack_channel = slack_channel
 
-    @property
-    def post_url(self):
-        ts = self.slack_channel.replace(".", "")
-        return "https://50onred.slack.com/archives/{}/p{}".format(self.slack_channel, ts)
+    def post_url(self, slack):
+        channel = slack.get_channel_name(self.slack_channel)
+
+        if channel:
+            ts = self.slack_timestamp.replace(".", "")
+            return "https://50onred.slack.com/archives/{}/p{}".format(channel, ts)
+        else:
+            return "(Private message)"
 
     @property
-    def message_info_for_table(self):
-        return "{}\n{}".format(self.text, self.post_url)
+    def users_value_info_for_table(self):
+        return "@{} -> @{} for `{}`".format(self.poster, self.user, self.value)
+
+    def message_info_for_table(self, slack):
+        text_tokens = self.text.split()
+
+        lines = []
+        curr_line = []
+        curr_line_length = 0
+
+        for token in text_tokens:
+            if token.startswith("<@") and token.endswith(">"):
+                user_id = token.strip("@<>")
+                user_name = slack.get_user_name(user_id)
+                token = "@{}".format(user_name)
+
+            curr_line_length += 1 + len(token)
+
+            if curr_line_length > MAX_LINE_LENGTH:
+                line = " ".join(curr_line)
+                lines.append(line)
+                curr_line = [token]
+                curr_line_length = 0
+            else:
+                curr_line.append(token)
+
+        lines.append(" ".join(curr_line))
+
+        text = "\n".join(lines)
+        return "{}\n{}".format(text, self.post_url(slack))
 
     @property
     def posted_at_formatted(self):

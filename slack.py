@@ -6,6 +6,7 @@ class Slack(object):
     def __init__(self, api_token):
         self.api_token = api_token
         self.username_cache = {}
+        self.channel_cache = {}
 
     def start(self, handlers):
         self.handlers = handlers
@@ -13,6 +14,13 @@ class Slack(object):
 
         response = self.make_api_request("rtm.start")
         self.bot_user_id = response["self"]["id"]
+
+        for user in response["users"]:
+            self.username_cache[user["id"]] = user["name"]
+
+        for channel in response["channels"]:
+            self.channel_cache[channel["id"]] = channel["name"]
+
         ws = websocket.WebSocketApp(response["url"],
                                     on_message = self._on_message,
                                     on_error = self._on_error,
@@ -48,15 +56,26 @@ class Slack(object):
         print "### WebSocket connection closed ###"
 
     def get_user_name(self, user_id):
-        if user_id in self.username_cache:
-            return self.username_cache[user_id]
+        if user_id not in self.username_cache:
+            user_info = self.make_api_request("users.info", { "user": user_id })
 
-        user_info = self.make_api_request("users.info", { "user": user_id })
+            user_name = user_info["user"]["name"]
+            self.username_cache[user_id] = user_name
 
-        user_name = user_info["user"]["name"]
-        self.username_cache[user_id] = user_name
+        return self.username_cache[user_id]
 
-        return user_name
+    def get_channel_name(self, channel_id):
+        if channel_id not in self.channel_cache:
+            channel_info = self.make_api_request("channels.info", { "channel": channel_id })
+
+            if channel_info["ok"]:
+                channel_name = channel_info["channel"]["name"]
+            else:
+                channel_name = None # private message or something
+
+            self.channel_cache[channel_id] = channel_name
+
+        return self.channel_cache[channel_id]
 
     def private_message_channel(self, user_id):
         response = self.make_api_request("im.open", { "user": user_id })
