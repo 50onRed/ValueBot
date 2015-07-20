@@ -1,30 +1,28 @@
 # ValueBot
 
-A Slack bot for calling out coworkers for espousing your organization's values. The best way to use ValueBot is have it listen across all the channels of your team. That way, anyone can call out other team members without disrupting their workflow. If you prefer, it can also listen only on a channel you specify, for instance `#values` or `#valuebot`.
+A Slack bot for calling out coworkers for espousing your organization's values. ValueBot behaves like a user in your Slack organization, and can listen for call-outs on any channel that you invite it to (by default only `#general`), or through direct messages to the bot.
 
 ## Usage
 
-A call-out is a message that includes a username and a hashtag representing a value to call the user out for. You provide the list of hashtags to listen to in the config file (described below). For example, if I wanted to call out `@mary` for an innovative solution to a problem that's been bugging the team for a while, that message would look like:
+A call-out is a message that includes an @-mention and a hashtag representing a value to call the user out for. You provide the list of hashtags to listen to in the config file (described below). For example, if I wanted to call out `@mary` for an innovative solution to a problem that's been bugging the team for a while, that message would look like:
 
 ```
 #innovative solution, @mary!
 ```
 
-### Posting
-
-To get ValueBot to hear you, you need to start your message with either `valuebot` or with the hashtag you're using. Using the example above:
+The placement of the hashtag and @-mention in the message doesn't matter, as long as the message contains both. For example, the call-out above could equally be written as:
 
 ```
-valuebot @mary that was one #innovative solution!
+Kudos for that #innovative solution, @mary
 ```
 
 or
 
 ```
-#innovative @mary kudos for solving that problem!
+@mary #innovative solution
 ```
 
-You can post a message in either format on any channel that ValueBot is listening on, and it'll store the message in its database.
+You can post a message in this format to any channel that ValueBot is listening on (or in a private message to valuebot, if you prefer to be discrete), and it'll persist the call-out to a database, which admins can then query for information about the call-outs.
 
 ### Getting Lists
 
@@ -34,7 +32,7 @@ Regular users can also ask ValueBot for lists, but are limited to only asking fo
 
 #### By User
 
-To get all the posts about a certain user, post a message to any channel that ValueBot is listening in with the following format:
+To get all the posts about a certain user, post a message to any channel that ValueBot is listening on (or in a private message to ValueBot) with the following format:
 
 ```
 valuebot list [user] [time]
@@ -72,7 +70,7 @@ valuebot list leaders [value] [time]
 
 ## Setting it up
 
-You can set up ValueBot on your own server/Slack team in three steps: create a config file, create the database, and set up Slack's Incoming/Outgoing WebHooks.
+You can set up ValueBot on your own server/Slack team in three steps: create a config file, install the dependencies, create the database, and set up a Slack bot ingegration.
 
 ### Config file
 
@@ -83,8 +81,7 @@ To start, create a file named config.py in the root of this directory. The four 
 
 SQLALCHEMY_DATABASE_URI = "sqlite:///db/valuebot.sqlite3" # Or wherever you want the database to live
 
-WEBHOOK_URL = "YOUR_URL_HERE"   # The URL configured on Slack for Incoming Webhooks
-SLACK_TOKEN = "YOUR_TOKEN_HERE" # The token for the Slack API you create in the next step
+SLACK_BOT_TOKEN="YOUR_TOKEN_HERE" # The token for the Slack Bot integration created later
 
 ADMINS = {"admin", "admin2"}    # A set of usernames corresponding to the users in
                                 # your team to whom you want to give admin privileges.
@@ -107,70 +104,50 @@ You can use the `SQLALCHEMY_DATABASE_URI` value provided above as-is, in which c
 
 To find your `WEBHOOK_URL`, you need to add ValueBot to your Slack team's integrations on the Slack web interface, which you can do in the next step.
 
-### Database
+### Requirements
 
-To get the database set up, first make sure that you've specified `SQLALCHEMY_DATABASE_URI` correctly in `config.py`. Then, simply run the following command from the project directory to set up the database schema:
+ValueBot depends on a number of third-party Python libraries which you can install with `pip`. It's recommended that you install the requirements inside a [virtualenv](https://virtualenv.pypa.io/en/latest/) instance, to keep the libraries separate from the ones you have installed globally on your machine. Regardless, the way to install these requirements is:
 
 ```
-$ python app.py db upgrade
+$ pip install -r requirements.txt
+```
+
+### Database
+
+ValueBot persists call-outs to a relational database. The exact database is up to you, although SQLite3 is recommended, in order to keep the database data in the same directory as ValueBot. To get the database set up, first make sure that you've specified `SQLALCHEMY_DATABASE_URI` correctly in `config.py`. Then, simply run the following command from the project directory to set up the database schema:
+
+```
+$ alembic upgrade head
 ```
 
 ### Slack
 
-To integrate ValueBot with Slack, you need to set up Outgoing Webhooks, Incoming Webhooks, and the Slack API.
+To integrate ValueBot with Slack, you simply need to create a new Bot Integration, and tell ValueBot to interact with Slack as this bot. To do this, first visit your team's integrations page at `https://<your domain>.slack.com/services/new`, scroll down to "DIY Integrations & Customizations," and create a new Bot integration:
 
-#### Outgoing Webhooks
+![Slack Integration List](http://i.imgur.com/OdmFx1o.png)
 
-Outgoing Webhooks are used by ValueBot to "listen" to messages sent across an organization. To set it up, create a new Outoing Webhooks Integration at `https://[your team].slack.com/services/new`, and use the following settings:
+Slack will prompt you for a name for the bot. This is up to you and your team, and only affects the way the bot looks when you interact with it in Slack. Once you choose one, you'll be taken to a page where you can customize the bot even further, including changing the icon and the description of the bot. All that matters to set up ValueBot, however, is the API token:
 
-![Outgoing Settings 1](http://i.imgur.com/MCMsiNH.png)
+![Slack Bot API Token](http://i.imgur.com/ulZ29D4.png)
 
-To get your trigger words, you can run the included helper function like so:
-
-```
-$ python app.py trigger_list
-```
-
-Simply paste the produced string into the input for "Trigger Word(s)." For the URL field, include the URL of the server where you're running ValueBot.
-
-For the cosmetic settings, it's recommended to identify ValueBot with a name and icon, although it's not strictly necessary.
-
-![Outgoing Settings 2](http://i.imgur.com/CfBoyyq.png)
-
-#### Incoming Webhooks
-
-Incoming Webhooks are used by ValueBot to send private messages of the generated lists to users. Ideally, we could use only Outgoing Webhooks to accomplish this, but as of ValueBot's creation, Slack's API does not support sending private messages with only Outgoing Webhooks. Go [bug Slack about it](https://api.slack.com/), if you'd prefer a simpler installation process.
-
-To configure Incoming Webhooks, create a new Incoming Webhooks ingegration at `https://[your team].slack.com/services/new`. The settings here are entirely optional, as ValueBot won't actually post to the channel you specify. The most important thing is the Webhook URL, which Slack generates for you. Take this url, and put it into your `config.py` as `WEBHOOK_URL`. Now, ValueBot knows how to send private messages to your organization.
-
-![Incoming Settings](http://i.imgur.com/rz3KPrQ.png)
-
-#### Slack API
-
-ValueBot uses the Slack API to figure out what users are being mentioned in call-out posts. It's not ideal, but this is essentially necessary to get around the issue [outlined in this Gist](https://gist.github.com/ernesto-jimenez/11276103), in which Outgoing webhooks doesn't include username information. Once again, this isn't ideal, and you can go [bug Slack about it](https://api.slack.com/) to get this feature added to Outgoing Webhooks :)
-
-To configure ValueBot to get around this, you simply need to generate a Slack Web API token on the [API homepage here](https://api.slack.com/web):
-
-![Slack Web API](http://i.imgur.com/VAbt9UQ.png)
-
-Once you have this token, put it into your `config.py` as `SLACK_TOKEN` and you're good to go!
+Take this token and put it into your `config.py` file, as `SLACK_BOT_TOKEN`. Now ValueBot will show up in your Slack messages, and can listen on any channel you add the bot to.
 
 ## Running the Server
 
 Once you've completed the set up, all that remains is to run the server that backs ValueBot. To do this, simply run the command:
 
 ```
-$ python app.py runserver [-p port]
+$ python manage.py run
 ```
 
-Where `port` is an optional argument for which port the server should run on. Defaults to 4567. Once you have the server running, and you've hooked up Slack Webhooks, you're good to go! Now you can start calling out your co-workers, and keeping track of who's doing the best job espousing your organization's values.
+Once you have the server running, and you've hooked up Slack Webhooks, you're good to go! Now you can start calling out your co-workers, and keeping track of who's doing the best job espousing your organization's values.
 
 ## Extra
 
 ValueBot also comes with a convenient function to send a list of yesterday's value leaders to your slack organization. The command to do this is:
 
 ```
-$ python app.py send_yesterday_leaders [channel]
+$ python manage.py send_yesterday_leaders [channel]
 ```
 
 Where `channel` is any channel in your Slack organization. For instance, you could specify `"#general"` to send an update to the whole organization about who led the team in call-outs the previous day. You can also hook this into a `cron` job to automate sending this message every morning, for instance.
@@ -178,7 +155,7 @@ Where `channel` is any channel in your Slack organization. For instance, you cou
 Similarly, valuebot also includes a command to send a reminder to a channel to post call outs today:
 
 ```
-$ python app.py send_callout_reminder [channel]
+$ python manage.py send_callout_reminder [channel]
 ```
 
-Where `channel` is again any channel in your organization.
+Where `channel` is again any channel in your organization that your bot has access to.
