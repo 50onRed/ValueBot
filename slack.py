@@ -115,7 +115,8 @@ class SlackMessage(SlackResponse):
         payload = {
             "channel": channel,
             "text": self.text,
-            'link_names': 1,
+            "link_names": 1,
+            "unfurl_links": False,
             "as_user": True
         }
 

@@ -6,7 +6,7 @@ from prettytable import PrettyTable, ALL, NONE
 MONTHS=["january", "february", "march", "april", "may", "june",
         "july", "august", "september", "october", "november", "december"]
 
-POSTS_PER_TABLE = 10
+POSTS_PER_TABLE = 25
 
 class ValueBot():
     def __init__(self, slack, admins, hashtags):
