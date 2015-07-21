@@ -41,26 +41,17 @@ def send_yesterday_leaders(channel):
     else:
         content = "No leaders found"
 
-    message = SlackPreformattedMessage(channel, content, "Yesterday's Leaders")
-    message.send(slack)
-
-# TODO: MAKE THIS ACTUALLY WORK
+    channel_id = slack.get_channel_id(channel)
+    if channel_id:
+        message = SlackPreformattedMessage(channel_id, content, "Yesterday's Leaders")
+        message.send(slack)
 
 @manager.command
 def send_callout_reminder(channel):
-    message = SlackMessage(channel, "*Daily reminder to call out team members for embodying the core values today!*")
-    message.send(slack)
-
-@manager.command
-def trigger_list():
-    hashtags = config.HASHTAGS
-    triggers = {"valuebot"}
-
-    for value in hashtags:
-        for hashtag in hashtags[value]:
-            triggers.add(hashtag)
-
-    print ','.join(triggers)
+    channel_id = slack.get_channel_id(channel)
+    if channel_id:
+        message = SlackMessage(channel_id, "*Daily reminder to call out team members for embodying the core values today!*")
+        message.send(slack)
 
 if __name__ == "__main__":
     manager.main()
