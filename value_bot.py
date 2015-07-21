@@ -6,6 +6,8 @@ from prettytable import PrettyTable, ALL, NONE
 MONTHS=["january", "february", "march", "april", "may", "june",
         "july", "august", "september", "october", "november", "december"]
 
+POSTS_PER_TABLE = 10
+
 class ValueBot():
     def __init__(self, slack, admins, hashtags):
         self.admins = admins
@@ -154,7 +156,7 @@ class ValueBot():
             else:
                 content = "No leaders found"
 
-            message = SlackPreformattedMessage(post.poster, title, content)
+            message = SlackPreformattedMessage(post.poster, content, title)
             return [reaction, message]
         else:
             posts = None
@@ -168,21 +170,38 @@ class ValueBot():
                 title += "in {}".format(value)
 
             title += date_clause(date, month, year)
+            response = [reaction]
 
             if posts:
                 table = new_left_aligned_table(["Info", "Message", "Date"])
+                num_in_table = 0
+                num_posts = len(posts)
+                first_table = True
 
-                for p in posts:
+                for idx, p in enumerate(posts):
                     table.add_row([
                         p.users_value_info_for_table,
                         p.message_info_for_table(self.slack),
                         p.posted_at_formatted])
-                content = table.get_string()
-            else:
-                content = "No posts found"
 
-            message = SlackPreformattedMessage(post.poster, title, content)
-            return [reaction, message]
+                    num_in_table += 1
+
+                    if num_in_table == POSTS_PER_TABLE or idx == num_posts - 1:
+                        if first_table:
+                            msg = SlackPreformattedMessage(post.poster, table.get_string(), title)
+                            first_table = False
+                        else:
+                            msg = SlackPreformattedMessage(post.poster, table.get_string())
+
+                        response.append(msg)
+
+                        table = new_left_aligned_table(["Info", "Message", "Date"], False)
+                        num_in_table = 0
+            else:
+                message = SlackPreformattedMessage(post.poster, "No posts found", title)
+                response.append(message)
+
+            return response
 
         return None
 
@@ -213,13 +232,18 @@ class ValueBot():
 
         return valuesDict
 
-def new_left_aligned_table(attrs):
-    t = PrettyTable(attrs)
+def new_left_aligned_table(attrs, header=True):
+    if header:
+        t = PrettyTable(attrs)
+    else:
+        t = PrettyTable(attrs)
+        t.header = False
+
+    t.align = "l"
     t.hrules = ALL
     t.horizontal_char = " "
     t.vrules = NONE
     t.header_style = "upper"
-    t.align = "l"
     t.padding_width = 1
     t.left_padding_width = 0
     t.right_padding_width = 0

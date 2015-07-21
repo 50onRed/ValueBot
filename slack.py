@@ -123,8 +123,12 @@ class SlackMessage(SlackResponse):
         print res
 
 class SlackPreformattedMessage(SlackMessage):
-    def __init__(self, channel, title, content):
-        text = "*{}*\n```{}```".format(title, content)
+    def __init__(self, channel, content, title=None):
+        if title:
+            text = "*{}*\n```{}```".format(title, content)
+        else:
+            text = "```{}```".format(content)
+
         super(SlackPreformattedMessage, self).__init__(channel, text)
 
 class SlackReaction(SlackResponse):

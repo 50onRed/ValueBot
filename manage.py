@@ -41,13 +41,15 @@ def send_yesterday_leaders(channel):
     else:
         content = "No leaders found"
 
-    message = SlackPreformattedMessage(channel, "Yesterday's leaders", content)
-    slack.send_message(message)
+    message = SlackPreformattedMessage(channel, content, "Yesterday's Leaders")
+    message.send(slack)
+
+# TODO: MAKE THIS ACTUALLY WORK
 
 @manager.command
 def send_callout_reminder(channel):
     message = SlackMessage(channel, "*Daily reminder to call out team members for embodying the core values today!*")
-    slack.send_message(message)
+    message.send(slack)
 
 @manager.command
 def trigger_list():
