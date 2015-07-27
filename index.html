@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Valuebot : A Slack bot for calling out team members for demonstrating your organization&#39;s core values!">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Valuebot</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/50onRed/ValueBot">View on GitHub</a>
+
+          <h1 id="project_title">Valuebot</h1>
+          <h2 id="project_tagline">A Slack bot for calling out team members for demonstrating your organization&#39;s core values!</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/50onRed/ValueBot/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/50onRed/ValueBot/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a id="valuebot" class="anchor" href="#valuebot" aria-hidden="true"><span class="octicon octicon-link"></span></a>ValueBot</h1>
+
+<p>A Slack bot for calling out coworkers for espousing your organization's values. ValueBot behaves like a user in your Slack organization, and can listen for call-outs on any channel that you invite it to (by default only <code>#general</code>), or through direct messages to the bot.</p>
+
+<h2>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<p>A call-out is a message that includes an @-mention and a hashtag representing a value to call the user out for. You provide the list of hashtags to listen to in the config file (described below). For example, if I wanted to call out <code>@mary</code> for an innovative solution to a problem that's been bugging the team for a while, that message would look like:</p>
+
+<pre><code>#innovative solution, @mary!
+</code></pre>
+
+<p>The placement of the hashtag and @-mention in the message doesn't matter, as long as the message contains both. For example, the call-out above could equally be written as:</p>
+
+<pre><code>Kudos for that #innovative solution, @mary
+</code></pre>
+
+<p>or</p>
+
+<pre><code>@mary #innovative solution
+</code></pre>
+
+<p>You can post a message in this format to any channel that ValueBot is listening on (or in a private message to valuebot, if you prefer to be discrete), and it'll persist the call-out to a database, which admins can then query for information about the call-outs.</p>
+
+<h3>
+<a id="getting-lists" class="anchor" href="#getting-lists" aria-hidden="true"><span class="octicon octicon-link"></span></a>Getting Lists</h3>
+
+<p>Admins can request lists from ValueBot of posts about a certain user, of posts with a certain value, and of the users with the most posts about them. You define which users are admins in <code>options.py</code>, as described below.</p>
+
+<p>Regular users can also ask ValueBot for lists, but are limited to only asking for a list of posts about themselves, which is done by passing in 'me' when asking for posts by user.</p>
+
+<h4>
+<a id="by-user" class="anchor" href="#by-user" aria-hidden="true"><span class="octicon octicon-link"></span></a>By User</h4>
+
+<p>To get all the posts about a certain user, post a message to any channel that ValueBot is listening on (or in a private message to ValueBot) with the following format:</p>
+
+<pre><code>valuebot list [user] [time]
+</code></pre>
+
+<ul>
+<li>
+<code>user</code> should be the username of someone in your team.
+
+<ul>
+<li>Can also be 'me' to request posts about yourself (this command is also available to non-admin users).</li>
+</ul>
+</li>
+<li>
+<code>time</code> (optional). If no <code>time</code> is specified, it defaults to getting posts from all time.
+
+<ul>
+<li>'today' to get the posts today.</li>
+<li>
+<code>month [year]</code> to get the posts from that month. If no year is provided, it's assumed to be the current year.</li>
+</ul>
+</li>
+</ul>
+
+<h4>
+<a id="by-value" class="anchor" href="#by-value" aria-hidden="true"><span class="octicon octicon-link"></span></a>By Value</h4>
+
+<p>To get all the posts with a certain value, post a message to any channel with the following format:</p>
+
+<pre><code>valuebot list [value] [time]
+</code></pre>
+
+<ul>
+<li>
+<code>value</code> should be either:
+
+<ul>
+<li>'all' to get posts across all values.</li>
+<li>The value you want to search for, as defined in your <code>options.py</code> file. Can also be a hashtag associated with that value.</li>
+</ul>
+</li>
+<li>
+<code>time</code> (optional) in the same format as above.</li>
+</ul>
+
+<h3>
+<a id="leaders" class="anchor" href="#leaders" aria-hidden="true"><span class="octicon octicon-link"></span></a>Leaders</h3>
+
+<p>To get the users with the most posts, post a message with the following format:</p>
+
+<pre><code>valuebot list leaders [value] [time]
+</code></pre>
+
+<ul>
+<li>
+<code>value</code> in the same format as above, to specify for which value ValueBot should find leaders.</li>
+<li>
+<code>time</code> (optional) in the same format as above</li>
+</ul>
+
+<h2>
+<a id="setting-it-up" class="anchor" href="#setting-it-up" aria-hidden="true"><span class="octicon octicon-link"></span></a>Setting it up</h2>
+
+<p>You can set up ValueBot on your own server/Slack team in three steps: create a config file, install the dependencies, create the database, and set up a Slack bot ingegration.</p>
+
+<h3>
+<a id="config-file" class="anchor" href="#config-file" aria-hidden="true"><span class="octicon octicon-link"></span></a>Config file</h3>
+
+<p>To start, create a file named config.py in the root of this directory. The four options you need are <code>SQLALCHEMY_DATABASE_URL</code>, <code>WEBHOOK_URL</code>, <code>ADMINS</code>, and <code>HASHTAGS</code>.</p>
+
+<pre><code># config.py
+
+SQLALCHEMY_DATABASE_URI = "sqlite:///db/valuebot.sqlite3" # Or wherever you want the database to live
+
+SLACK_BOT_TOKEN="YOUR_TOKEN_HERE" # The token for the Slack Bot integration created later
+
+ADMINS = {"admin", "admin2"}    # A set of usernames corresponding to the users in
+                                # your team to whom you want to give admin privileges.
+
+HASHTAGS = {                    # A dictionary with keys of values you want to be able
+  'innovation': {               # to call people out for, corresponding to sets of
+    '#innovation',              # hashtags that users can use to refer to those values.
+    '#innovative',
+    '#be-innovative' 
+  },
+  'passion': {
+    '#passion',
+    '#passionate',
+    '#be-passionate'
+  }
+}
+</code></pre>
+
+<p>You can use the <code>SQLALCHEMY_DATABASE_URI</code> value provided above as-is, in which case the data will be stored in <code>db/valuebot.sqlite3</code> in this directory. Alternatively, you can provide a URI to another SQL database, which can be with SQLite, MySQL, PostgreSQL, or <a href="http://docs.sqlalchemy.org/en/rel_1_0/dialects/index.html">any database supported by SQLAlchemy</a>.</p>
+
+<p>To find your <code>WEBHOOK_URL</code>, you need to add ValueBot to your Slack team's integrations on the Slack web interface, which you can do in the next step.</p>
+
+<h3>
+<a id="requirements" class="anchor" href="#requirements" aria-hidden="true"><span class="octicon octicon-link"></span></a>Requirements</h3>
+
+<p>ValueBot depends on a number of third-party Python libraries which you can install with <code>pip</code>. It's recommended that you install the requirements inside a <a href="https://virtualenv.pypa.io/en/latest/">virtualenv</a> instance, to keep the libraries separate from the ones you have installed globally on your machine. Regardless, the way to install these requirements is:</p>
+
+<pre><code>$ pip install -r requirements.txt
+</code></pre>
+
+<h3>
+<a id="database" class="anchor" href="#database" aria-hidden="true"><span class="octicon octicon-link"></span></a>Database</h3>
+
+<p>ValueBot persists call-outs to a relational database. The exact database is up to you, although SQLite3 is recommended, in order to keep the database data in the same directory as ValueBot. To get the database set up, first make sure that you've specified <code>SQLALCHEMY_DATABASE_URI</code> correctly in <code>config.py</code>. Then, simply run the following command from the project directory to set up the database schema:</p>
+
+<pre><code>$ alembic upgrade head
+</code></pre>
+
+<h3>
+<a id="slack" class="anchor" href="#slack" aria-hidden="true"><span class="octicon octicon-link"></span></a>Slack</h3>
+
+<p>To integrate ValueBot with Slack, you simply need to create a new Bot Integration, and tell ValueBot to interact with Slack as this bot. To do this, first visit your team's integrations page at <code>https://&lt;your domain&gt;.slack.com/services/new</code>, scroll down to "DIY Integrations &amp; Customizations," and create a new Bot integration:</p>
+
+<p><img src="http://i.imgur.com/OdmFx1o.png" alt="Slack Integration List"></p>
+
+<p>Slack will prompt you for a name for the bot. This is up to you and your team, and only affects the way the bot looks when you interact with it in Slack. Once you choose one, you'll be taken to a page where you can customize the bot even further, including changing the icon and the description of the bot. All that matters to set up ValueBot, however, is the API token:</p>
+
+<p><img src="http://i.imgur.com/ulZ29D4.png" alt="Slack Bot API Token"></p>
+
+<p>Take this token and put it into your <code>config.py</code> file, as <code>SLACK_BOT_TOKEN</code>. Now ValueBot will show up in your Slack messages, and can listen on any channel you add the bot to.</p>
+
+<h2>
+<a id="running-the-server" class="anchor" href="#running-the-server" aria-hidden="true"><span class="octicon octicon-link"></span></a>Running the Server</h2>
+
+<p>Once you've completed the set up, all that remains is to run the server that backs ValueBot. To do this, simply run the command:</p>
+
+<pre><code>$ python manage.py run
+</code></pre>
+
+<p>Once you have the server running, and you've hooked up Slack Webhooks, you're good to go! Now you can start calling out your co-workers, and keeping track of who's doing the best job espousing your organization's values.</p>
+
+<h2>
+<a id="extra" class="anchor" href="#extra" aria-hidden="true"><span class="octicon octicon-link"></span></a>Extra</h2>
+
+<p>ValueBot also comes with a convenient function to send a list of yesterday's value leaders to your slack organization. The command to do this is:</p>
+
+<pre><code>$ python manage.py send_yesterday_leaders [channel]
+</code></pre>
+
+<p>Where <code>channel</code> is any channel in your Slack organization. For instance, you could specify <code>"#general"</code> to send an update to the whole organization about who led the team in call-outs the previous day. You can also hook this into a <code>cron</code> job to automate sending this message every morning, for instance.</p>
+
+<p>Similarly, valuebot also includes a command to send a reminder to a channel to post call outs today:</p>
+
+<pre><code>$ python manage.py send_callout_reminder [channel]
+</code></pre>
+
+<p>Where <code>channel</code> is again any channel in your organization that your bot has access to.</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Valuebot maintained by <a href="https://github.com/50onRed">50onRed</a></p>
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
