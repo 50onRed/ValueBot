@@ -1,5 +1,6 @@
 import datetime
 from sqlalchemy import Column, Integer, String, DateTime, func, desc
+from sqlalchemy.orm import relationship, backref
 from calendar import monthrange
 from . import Base
 
@@ -9,16 +10,17 @@ class Post(Base):
     __tablename__ = 'posts'
 
     id = Column(Integer, primary_key=True)
-    user = Column(String, nullable=False)
+    users = relationship('PostUser', backref='post')
+    values = relationship('PostValues', backref='post')
     poster = Column(String, nullable=False)
-    value = Column(String, nullable=False)
     text = Column(String, nullable=False)
     posted_at = Column(DateTime, nullable=False)
     slack_timestamp = Column(String, nullable=False)
     slack_channel = Column(String, nullable=False)
 
-    def __init__(self, user, poster, value, text, slack_timestamp, slack_channel, posted_at=None):
-        self.user = user
+    def __init__(self, users, poster, values, text, slack_timestamp, slack_channel, posted_at=None):
+        self.users = users
+        
         self.poster = poster
         self.value = value
         self.text = text
@@ -109,6 +111,26 @@ class Post(Base):
             query = query.filter(Post.posted_at >= dates[0], Post.posted_at <= dates[1])
 
         return query
+
+class PostUser(Base):
+    __tablename__ = 'post_users'
+
+    id = Column(Integer, primary_key=True)
+    user = Column(String, nullable=False)
+    post_id = Column(Integer, ForeignKey('posts.id'))
+
+    def __init__(self, user):
+        self.user = user
+
+class PostValue(Base):
+    __tablename__ = 'post_values'
+
+    id = Column(Integer, primary_key=True)
+    value = Column(String, nullable=False)
+    post_id = Column(Integer, ForeignKey('posts.id'))
+
+    def __init__(self, value):
+        self.value = value
 
 def _get_date_range(date, month, year):
     start, end = None, None
