@@ -9,13 +9,13 @@ class Post(Base):
     __tablename__ = 'posts'
 
     id = Column(Integer, primary_key=True)
-    user = Column(String, nullable=False)
-    poster = Column(String, nullable=False)
-    value = Column(String, nullable=False)
-    text = Column(String, nullable=False)
+    user = Column(String(64), nullable=False)
+    poster = Column(String(64), nullable=False)
+    value = Column(String(64), nullable=False)
+    text = Column(String(500), nullable=False)
     posted_at = Column(DateTime, nullable=False)
-    slack_timestamp = Column(String, nullable=False)
-    slack_channel = Column(String, nullable=False)
+    slack_timestamp = Column(String(64), nullable=False)
+    slack_channel = Column(String(64), nullable=False)
 
     def __init__(self, user, poster, value, text, slack_timestamp, slack_channel, posted_at=None):
         self.user = user

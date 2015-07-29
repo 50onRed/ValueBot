@@ -20,13 +20,13 @@ def upgrade():
     op.create_table(
         'posts',
         sa.Column('id', sa.Integer, primary_key=True),
-        sa.Column('user', sa.String, nullable=False),
-        sa.Column('poster', sa.String, nullable=False),
-        sa.Column('value', sa.String, nullable=False),
-        sa.Column('text', sa.String, nullable=False),
+        sa.Column('user', sa.String(64), nullable=False),
+        sa.Column('poster', sa.String(64), nullable=False),
+        sa.Column('value', sa.String(64), nullable=False),
+        sa.Column('text', sa.String(500), nullable=False),
         sa.Column('posted_at', sa.DateTime, nullable=False),
-        sa.Column('slack_timestamp', sa.String, nullable=False),
-        sa.Column('slack_channel', sa.String, nullable=False))
+        sa.Column('slack_timestamp', sa.String(64), nullable=False),
+        sa.Column('slack_channel', sa.String(64), nullable=False))
 
 def downgrade():
     op.drop_table('posts')
