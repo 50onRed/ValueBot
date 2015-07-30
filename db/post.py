@@ -40,7 +40,12 @@ class Post(Base):
         return "@{} -> @{} for `{}`".format(self.poster, self.user, self.value)
 
     def message_info_for_table(self, slack):
-        text_tokens = self.text.encode("ascii", "replace").split()
+        if not isinstance(self.text, unicode):
+            text = unicode(self.text, "ISO-8859-1")
+        else:
+            text = self.text
+
+        text_tokens = text.split()
 
         lines = []
         curr_line = []
@@ -51,7 +56,7 @@ class Post(Base):
                 last_chars = token[12:0]
                 user_id = token[:12].strip("@<>")
                 user_name = slack.get_user_name(user_id)
-                token = "@{}{}".format(user_name, last_chars)
+                token = u"@{}{}".format(user_name, last_chars)
 
             curr_line_length += 1 + len(token)
 
@@ -65,8 +70,8 @@ class Post(Base):
 
         lines.append(" ".join(curr_line))
 
-        text = "\n".join(lines)
-        return "{}\n{}".format(text, self.post_url(slack))
+        text = u"\n".join(lines)
+        return u"{}\n{}".format(text, self.post_url(slack))
 
     @property
     def posted_at_formatted(self):
