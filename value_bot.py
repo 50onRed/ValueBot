@@ -1,5 +1,5 @@
 import datetime
-from slack import SlackResponse, SlackPreformattedMessage
+from lib.slack import SlackResponse, SlackPreformattedMessage
 from db.post import Post
 from prettytable import PrettyTable, ALL, NONE
 
@@ -106,11 +106,11 @@ class ValueBot():
         if not subject:
             subject = tokens[0]
 
-        if not self.is_admin(post.poster) and subject != "me":
+        if not self.is_admin(post.poster) and subject != "me" and subject != "@me":
             return post.react("x")
 
-        if subject == "me" and not leaders:
-            user = post.poster
+        if (subject == "me" or subject == "@me") and not leaders:
+            user = self.slack.get_user_name(post.poster)
         elif subject.startswith("@") and not leaders:
             user = subject.lstrip("@")
         elif subject in self.values or subject == "all":
