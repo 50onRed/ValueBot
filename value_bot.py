@@ -109,8 +109,8 @@ class ValueBot():
         if not self.is_admin(post.poster) and subject != "me":
             return post.react("x")
 
-        if subject == "me" and not leaders:
-            user = post.poster
+        if (subject == "me" or subject == "@me") and not leaders:
+            user = self.slack.get_user_name(post.poster)
         elif subject.startswith("@") and not leaders:
             user = subject.lstrip("@")
         elif subject in self.values or subject == "all":
