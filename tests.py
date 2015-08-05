@@ -1,5 +1,5 @@
 import unittest
-from slack import Slack, SlackResponse, SlackMessage, SlackReaction, SlackPost
+from lib.slack import Slack, SlackResponse, SlackMessage, SlackReaction, SlackPost
 from value_bot import ValueBot
 from db import Base
 from sqlalchemy import create_engine

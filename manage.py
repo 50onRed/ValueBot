@@ -1,6 +1,6 @@
 import datetime
 import config
-from slack import Slack, SlackPost, SlackMessage, SlackPreformattedMessage
+from lib.slack import Slack, SlackPost, SlackMessage, SlackPreformattedMessage
 from value_bot import ValueBot
 from manager import Manager
 from contextlib import contextmanager

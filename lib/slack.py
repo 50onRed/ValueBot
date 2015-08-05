@@ -139,9 +139,9 @@ class SlackMessage(SlackResponse):
 class SlackPreformattedMessage(SlackMessage):
     def __init__(self, channel, content, title=None):
         if title:
-            text = "*{}*\n```{}```".format(title, content)
+            text = u"*{}*\n```{}```".format(title, content)
         else:
-            text = "```{}```".format(content)
+            text = u"```{}```".format(content)
 
         super(SlackPreformattedMessage, self).__init__(channel, text)
 
