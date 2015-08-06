@@ -20,21 +20,21 @@ def upgrade():
     op.create_table(
         'post_users',
         sa.Column('id', sa.Integer, primary_key=True),
-        sa.Column('user', sa.String, nullable=False),
+        sa.Column('user', sa.String(64), nullable=False),
         sa.Column('post_id', sa.Integer, nullable=False))
 
     op.create_table(
         'post_values',
         sa.Column('id', sa.Integer, primary_key=True),
-        sa.Column('value', sa.String, nullable=False),
+        sa.Column('value', sa.String(64), nullable=False),
         sa.Column('post_id', sa.Integer, nullable=False))
 
     post_users_table = sa.sql.table('post_users',
-        sa.Column('user', sa.String, nullable=False),
+        sa.Column('user', sa.String(64), nullable=False),
         sa.Column('post_id', sa.Integer, nullable=False))
 
     post_values_table = sa.sql.table('post_values',
-        sa.Column('value', sa.String, nullable=False),
+        sa.Column('value', sa.String(64), nullable=False),
         sa.Column('post_id', sa.Integer, nullable=False))
 
     conn = op.get_bind()
