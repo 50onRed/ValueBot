@@ -1,5 +1,6 @@
 import datetime
-from sqlalchemy import Column, Integer, String, DateTime, func, desc
+from sqlalchemy import Column, Integer, String, DateTime, func, desc, ForeignKey
+from sqlalchemy.orm import relationship
 from calendar import monthrange
 from . import Base
 
@@ -9,18 +10,16 @@ class Post(Base):
     __tablename__ = 'posts'
 
     id = Column(Integer, primary_key=True)
-    user = Column(String(64), nullable=False)
+    users = relationship('PostUser', back_populates='post')
+    values = relationship('PostValue', back_populates='post')
     poster = Column(String(64), nullable=False)
-    value = Column(String(64), nullable=False)
     text = Column(String(500), nullable=False)
     posted_at = Column(DateTime, nullable=False)
     slack_timestamp = Column(String(64), nullable=False)
     slack_channel = Column(String(64), nullable=False)
 
-    def __init__(self, user, poster, value, text, slack_timestamp, slack_channel, posted_at=None):
-        self.user = user
+    def __init__(self, poster, text, slack_timestamp, slack_channel, posted_at=None):
         self.poster = poster
-        self.value = value
         self.text = text
         self.posted_at = posted_at or datetime.datetime.now()
         self.slack_timestamp = slack_timestamp
@@ -37,7 +36,13 @@ class Post(Base):
 
     @property
     def users_value_info_for_table(self):
-        return "@{} -> @{} for `{}`".format(self.poster, self.user, self.value)
+        users = map(lambda u: u.formatted_name, self.users)
+        users = ", ".join(users)
+
+        values = map(lambda v: v.value, self.values)
+        values = ", ".join(values)
+
+        return "@{} -> {} for {}".format(self.poster, users, values)
 
     def message_info_for_table(self, slack):
         if not isinstance(self.text, unicode):
@@ -79,7 +84,7 @@ class Post(Base):
 
     @classmethod
     def posts_by_user(cls, session, user, date, month, year):
-        query = session.query(cls).filter(Post.user == user)
+        query = session.query(Post).join(Post.users).filter(PostUser.user == user)
 
         if date or month:
             dates = _get_date_range(date, month, year)
@@ -92,7 +97,7 @@ class Post(Base):
         query = session.query(cls)
 
         if (value and value != "all"):
-            query = query.filter(Post.value == value)
+            query = query.join(Post.values).filter(PostValue.value == value)
 
         if date or month:
             dates = _get_date_range(date, month, year)
@@ -102,18 +107,46 @@ class Post(Base):
 
     @classmethod
     def leaders_by_value(cls, session, value, date, month, year):
-        query = session.query(Post.user, func.count(Post.id).label('user_occurence')
-            ).group_by(Post.user
+        query = session.query(PostUser.user, func.count(PostUser.id).label('user_occurence')
+            ).group_by(PostUser.user
             ).order_by(desc('user_occurence'))
 
         if value and value != "all":
-            query = query.filter(Post.value == value)
+            query = query.join("post").join(Post.values).filter(PostValue.value == value)
 
         if date or month:
             dates = _get_date_range(date, month, year)
             query = query.filter(Post.posted_at >= dates[0], Post.posted_at <= dates[1])
 
         return query
+
+class PostUser(Base):
+    __tablename__ = 'post_users'
+
+    id = Column(Integer, primary_key=True)
+    user = Column(String, nullable=False)
+    post_id = Column(Integer, ForeignKey('posts.id'))
+
+    post = relationship('Post', back_populates='users')
+
+    def __init__(self, user):
+        self.user = user
+
+    @property
+    def formatted_name(self):
+        return "@{}".format(self.user)
+
+class PostValue(Base):
+    __tablename__ = 'post_values'
+
+    id = Column(Integer, primary_key=True)
+    value = Column(String, nullable=False)
+    post_id = Column(Integer, ForeignKey('posts.id'))
+
+    post = relationship('Post', back_populates='values')
+
+    def __init__(self, value):
+        self.value = value
 
 def _get_date_range(date, month, year):
     start, end = None, None

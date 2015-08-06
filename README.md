@@ -22,6 +22,12 @@ or
 @mary #innovative solution
 ```
 
+In addition, you're not limited to calling out only one user or one value at a time. Call-outs can include multiple users and values, as many as you want. To accomplish this, simply @-mention multiple users, and include multiple hashtags:
+
+```
+Nice job being #supportive and #innovative, @mary and @jack!
+```
+
 You can post a message in this format to any channel that ValueBot is listening on (or in a private message to valuebot, if you prefer to be discrete), and it'll persist the call-out to a database, which admins can then query for information about the call-outs.
 
 ### Getting Lists
