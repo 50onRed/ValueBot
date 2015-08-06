@@ -145,9 +145,9 @@ class ValueBotTests(unittest.TestCase):
             self.assertEqual(self.session.query(Post).count(), num_posts + 1)
 
             most_recent = self.session.query(Post).order_by(Post.id.desc()).first()
-            self.assertEqual(most_recent.user, "user")
+            self.assertEqual(most_recent.users[0].user, "user")
             self.assertEqual(most_recent.poster, "testadmin")
-            self.assertEqual(most_recent.value, "testvalue")
+            self.assertEqual(most_recent.values[0].value, "testvalue")
             self.assertEqual(most_recent.slack_channel, "#channel")
 
 if __name__ == '__main__':

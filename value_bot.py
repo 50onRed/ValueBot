@@ -1,6 +1,6 @@
 import datetime
 from lib.slack import SlackResponse, SlackPreformattedMessage
-from db.post import Post
+from db.post import Post, PostUser, PostValue
 from prettytable import PrettyTable, ALL, NONE
 
 MONTHS=["january", "february", "march", "april", "may", "june",
@@ -54,25 +54,31 @@ class ValueBot():
         value, user = None, None
 
         hashtags = [tag.rstrip(".,!?:;") for tag in post.text.split() if tag.startswith("#")]
+        values = []
         for tag in hashtags:
             if tag in self.valuesDict:
-                value = self.valuesDict[tag]
-                break # only use the first hashtag that matches a value
+                values.append(self.valuesDict[tag])
 
         mentioned_users = [name.strip("@.,!?:;<>") for name in post.text.split() if name.startswith("<@")]
-        if len(mentioned_users) >= 1:
-            user = self.slack.get_user_name(mentioned_users[0])
+        users = []
+        for user_id in mentioned_users:
+            user = self.slack.get_user_name(user_id)
+            if user:
+                users.append(user)
 
-            if user == None:
-                return post.respond("Error finding specified user.")
-
-        if not value or not user:
+        if len(values) == 0 or len(users) == 0:
             return None
 
         poster_username = self.slack.get_user_name(post.poster)
 
-        post_obj = Post(user, poster_username, value, post.text, post.timestamp, post.channel)
+        post_obj = Post(poster_username, post.text, post.timestamp, post.channel)
         session.add(post_obj)
+        
+        for value in values:
+            post_obj.values.append(PostValue(value))
+
+        for user in users:
+            post_obj.users.append(PostUser(user))
 
         return post.react("white_check_mark")
 
