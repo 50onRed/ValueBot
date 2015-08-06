@@ -1,10 +1,11 @@
-import datetime
+import datetime, textwrap
 from sqlalchemy import Column, Integer, String, DateTime, func, desc, ForeignKey
 from sqlalchemy.orm import relationship
 from calendar import monthrange
 from . import Base
 
-MAX_LINE_LENGTH = 65
+MAX_INFO_LENGTH = 45
+MAX_MSG_LENGTH = 65
 
 class Post(Base):
     __tablename__ = 'posts'
@@ -32,7 +33,7 @@ class Post(Base):
             ts = self.slack_timestamp.replace(".", "")
             return "https://50onred.slack.com/archives/{}/p{}".format(channel, ts)
         else:
-            return "(Private message)"
+            return "(Private Message or Group)"
 
     @property
     def users_value_info_for_table(self):
@@ -42,7 +43,8 @@ class Post(Base):
         values = map(lambda v: v.value, self.values)
         values = ", ".join(values)
 
-        return "@{} -> {} for {}".format(self.poster, users, values)
+        text = "@{} -> {} for {}".format(self.poster, users, values)
+        return textwrap.fill(text, MAX_INFO_LENGTH)
 
     def message_info_for_table(self, slack):
         if not isinstance(self.text, unicode):
@@ -50,32 +52,17 @@ class Post(Base):
         else:
             text = self.text
 
-        text_tokens = text.split()
-
-        lines = []
-        curr_line = []
-        curr_line_length = 0
-
-        for token in text_tokens:
+        def replace_usernames(token):
             if token.startswith("<@"):
                 last_chars = token[12:0]
                 user_id = token[:12].strip("@<>")
                 user_name = slack.get_user_name(user_id)
                 token = u"@{}{}".format(user_name, last_chars)
 
-            curr_line_length += 1 + len(token)
+            return token
 
-            if curr_line_length > MAX_LINE_LENGTH:
-                line = " ".join(curr_line)
-                lines.append(line)
-                curr_line = [token]
-                curr_line_length = 0
-            else:
-                curr_line.append(token)
-
-        lines.append(" ".join(curr_line))
-
-        text = u"\n".join(lines)
+        text_tokens = map(replace_usernames, text.split())
+        text = textwrap.fill(u" ".join(text_tokens), MAX_MSG_LENGTH)
         return u"{}\n{}".format(text, self.post_url(slack))
 
     @property
