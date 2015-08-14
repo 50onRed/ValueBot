@@ -29,12 +29,17 @@ def run():
     })
 
 @manager.command
-def send_yesterday_leaders(channel):
+def send_previous_day_leaders(channel):
     now = datetime.datetime.now()
-    yesterday = now - datetime.timedelta(days=1)
+    if now.isoweekday() in (6, 7) or now.date() in config.BLACKOUT_DATES:
+        return
+    if now.isoweekday() == 1:
+        previous_day = now - datetime.timedelta(days=3)
+    else:
+        previous_day = now - datetime.timedelta(days=1)
 
     with session_scope() as session:
-        table = value_bot.get_leaders_table(session, "all", yesterday.day, yesterday.month, yesterday.year)
+        table = value_bot.get_leaders_table(session, "all", previous_day.day, previous_day.month, previous_day.year)
 
     if table:
         content = table.get_string()
@@ -48,6 +53,9 @@ def send_yesterday_leaders(channel):
 
 @manager.command
 def send_callout_reminder(channel):
+    now = datetime.datetime.now()
+    if now.date() in config.BLACKOUT_DATES:
+        return
     channel_id = slack.get_channel_id(channel)
     if channel_id:
         message = SlackMessage(channel_id, "*Daily reminder to call out team members for embodying the core values today!*")
