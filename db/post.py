@@ -103,7 +103,7 @@ class Post(Base):
 
         if date or month:
             dates = _get_date_range(date, month, year)
-            query = query.filter(Post.posted_at >= dates[0], Post.posted_at <= dates[1])
+            query = query.join("post").filter(Post.posted_at >= dates[0], Post.posted_at <= dates[1])
 
         return query
 
