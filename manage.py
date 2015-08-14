@@ -31,7 +31,11 @@ def run():
 @manager.command
 def send_previous_day_leaders(channel):
     now = datetime.datetime.now()
-    if now.isoweekday() in (6, 7) or now.date() in config.BLACKOUT_DATES:
+    if 'BLACKOUT_DATES' in config:
+        blackout_dates = config.BLACKOUT_DATES
+    else:
+        blackout_dates = []
+    if now.isoweekday() in (6, 7) or now.date() in blackout_dates:
         return
     if now.isoweekday() == 1:
         previous_day = now - datetime.timedelta(days=3)
