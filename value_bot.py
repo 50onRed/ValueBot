@@ -53,7 +53,7 @@ class ValueBot():
     def _handle_call_out(self, post, session):
         value, user = None, None
 
-        hashtags = [tag.rstrip(".,!?:;") for tag in post.text.split() if tag.startswith("#")]
+        hashtags = [tag.rstrip(".,!?:;").lower() for tag in post.text.split() if tag.startswith("#")]
         values = []
         for tag in hashtags:
             if tag in self.valuesDict:
