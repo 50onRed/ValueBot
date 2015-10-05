@@ -71,6 +71,9 @@ class ValueBot():
 
         poster_username = self.slack.get_user_name(post.poster)
 
+        if poster_username in users:
+            return None
+
         post_obj = Post(poster_username, post.text, post.timestamp, post.channel)
         session.add(post_obj)
         
