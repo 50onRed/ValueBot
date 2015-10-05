@@ -60,18 +60,15 @@ class ValueBot():
                 values.append(self.valuesDict[tag])
 
         mentioned_users = [name.strip("@.,!?:;<>") for name in post.text.split() if name.startswith("<@")]
+        poster_username = self.slack.get_user_name(post.poster)
+
         users = []
         for user_id in mentioned_users:
             user = self.slack.get_user_name(user_id)
-            if user:
+            if user and user != poster_username:
                 users.append(user)
 
         if len(values) == 0 or len(users) == 0:
-            return None
-
-        poster_username = self.slack.get_user_name(post.poster)
-
-        if poster_username in users:
             return None
 
         post_obj = Post(poster_username, post.text, post.timestamp, post.channel)
