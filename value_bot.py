@@ -70,7 +70,7 @@ class ValueBot():
             return None
 
         if '#eom' in post.text.lower() and not self._eom_valid(post.text):
-            return None
+            return post.react('x')
 
         poster_username = self.slack.get_user_name(post.poster)
 
