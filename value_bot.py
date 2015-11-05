@@ -69,11 +69,14 @@ class ValueBot():
         if len(values) == 0 or len(users) == 0:
             return None
 
+        if '#eom' in post.text.lower() and not self._eom_valid(post.text):
+            return None
+
         poster_username = self.slack.get_user_name(post.poster)
 
         post_obj = Post(poster_username, post.text, post.timestamp, post.channel)
         session.add(post_obj)
-        
+
         for value in values:
             post_obj.values.append(PostValue(value))
 
@@ -81,6 +84,10 @@ class ValueBot():
             post_obj.users.append(PostUser(user))
 
         return post.react("white_check_mark")
+
+    def _eom_valid(self, text):
+        words = filter(lambda w: '#' not in w and '@' not in w, text.split())
+        return len(words) > 3
 
     def _generate_list(self, post, session):
         tokens = [token.rstrip(".,!?:;").lower() for token in post.text.split()]
