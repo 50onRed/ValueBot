@@ -69,9 +69,10 @@ class ValueBot():
         if len(values) == 0 or len(users) == 0:
             return None
 
-        if '#eom' in post.text.lower() and not self._eom_valid(post.text):
+        if not self._post_length_valid(post.text) {
             return post.react('x')
-
+        }
+        
         poster_username = self.slack.get_user_name(post.poster)
 
         post_obj = Post(poster_username, post.text, post.timestamp, post.channel)
@@ -85,7 +86,7 @@ class ValueBot():
 
         return post.react("white_check_mark")
 
-    def _eom_valid(self, text):
+    def _post_length_valid(self, text):
         words = filter(lambda w: '#' not in w and '@' not in w, text.split())
         return len(words) > 3
 
