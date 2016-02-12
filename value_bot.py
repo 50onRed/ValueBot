@@ -69,9 +69,8 @@ class ValueBot():
         if len(values) == 0 or len(users) == 0:
             return None
 
-        if not self._post_length_valid(post.text) {
+        if not self._post_length_valid(post.text): 
             return post.react('x')
-        }
         
         poster_username = self.slack.get_user_name(post.poster)
 
